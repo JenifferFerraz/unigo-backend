@@ -1,0 +1,46 @@
+{
+  "name": "unigo-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "db:drop": "typeorm-ts-node-commonjs schema:drop -d src/config/data-source.ts",
+    "db:migrate": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
+    "db:reset": "npm run db:drop && npm run db:migrate",
+    "migration:generate": "npm run typeorm migration:generate -- -d src/config/data-source.ts",
+    "migration:run": "npm run typeorm migration:run -- -d src/config/data-source.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/config/data-source.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "class-validator": "^0.14.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.2.3",
+    "nodemailer": "^6.10.1",
+    "pg": "^8.14.1",
+    "reflect-metadata": "^0.2.2",
+    "ts-node": "^10.9.2",
+    "typeorm": "^0.3.22"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/module-alias": "^2.0.4",
+    "@types/node": "^22.14.1",
+    "@types/nodemailer": "^6.4.17",
+    "@types/qs": "^6.9.18",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}
