@@ -31,7 +31,7 @@ class AuthService {
         const user = await this.userRepository.findOne({
             where: { 
                 email: data.email,
-                isDeleted: false // Only allow non-deleted users to login
+                isDeleted: false 
             },
             relations: ['studentProfile', 'course']
         });
@@ -59,6 +59,7 @@ class AuthService {
             ...userData,
             token,
             refreshToken,
+             termsAccepted: user.termsAccepted,
             requiresTermsAcceptance: !user.termsAccepted 
         };
     }
@@ -147,7 +148,7 @@ class AuthService {
         await this.userRepository.save(user);
     }
 
-    public static async checkTermsStatus(userId: number): Promise<boolean> {
+    public static async acceptTerms(userId: number): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { 
                 id: userId,
@@ -159,10 +160,13 @@ class AuthService {
             throw new Error('User not found');
         }
     
-        return user.termsAccepted;
+        user.termsAccepted = true;
+        console.log(`Terms accepted for user ${userId}:`, user.termsAccepted);
+        
+        await this.userRepository.save(user);
+        console.log(`User ${userId} terms acceptance saved successfully`);
     }
 }
-
 
 
 export default AuthService;
