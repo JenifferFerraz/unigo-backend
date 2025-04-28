@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import { StudentProfile } from "../entities/StudentProfile";
 
 dotenv.config();
-
+//** - Configuração do banco de dados
 export const AppDataSource = new DataSource({
     type: "postgres",
     host: process.env.DB_HOST,

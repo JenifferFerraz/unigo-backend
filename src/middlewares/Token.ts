@@ -4,7 +4,7 @@ import { verify, JwtPayload } from 'jsonwebtoken';
 interface TokenPayload extends JwtPayload {
     email: string;
 }
-
+// Middleware para verificar o token JWT
 class Token {
     public async authorize(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {

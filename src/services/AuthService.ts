@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 
 class AuthService {
+    //** - Repositório de usuários */
     private static userRepository = AppDataSource.getRepository(User);
     private static transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -16,7 +17,7 @@ class AuthService {
             pass: process.env.SMTP_PASS
         }
     });
-
+    //** - Valida os dados de login */
 
     public static validateLogin(req: Request): void {
         const requiredFields = ['email', 'password'];
@@ -26,7 +27,7 @@ class AuthService {
             }
         });
     }
-
+//** - Realiza o login do usuário */
     public static async login(data: LoginDTO): Promise<any> {
         const user = await this.userRepository.findOne({
             where: { 
@@ -63,7 +64,7 @@ class AuthService {
             requiresTermsAcceptance: !user.termsAccepted 
         };
     }
-
+//** - Gera um token JWT para o usuário */
     private static generateToken(email: string): string {
         return sign(
             { email }, 
@@ -71,7 +72,7 @@ class AuthService {
             { expiresIn: '15m' }
         );
     }
-
+//** - Gera um token de atualização para o usuário */
     private static async generateRefreshToken(email: string): Promise<string> {
         const refreshToken = sign(
             { email },
@@ -81,7 +82,7 @@ class AuthService {
 
         return refreshToken;
     }
-
+//** - Retorna os dados do perfil do usuário atual */
     public static async getProfile(email: string): Promise<Partial<User>> {
         const user = await this.userRepository.findOne({
             where: { email },
@@ -95,12 +96,13 @@ class AuthService {
         const { password, refreshToken, ...userData } = user;
         return userData;
     }
+    //** - Valida os dados para redefinição de senha */
     public static validatePasswordReset(req: Request): void {
         if (!req.body.email) {
             throw new Error('Email is required');
         }
     }
-
+//** - Inicia o processo de redefinição de senha */
     public static async requestPasswordReset(email: string): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { email }
@@ -133,7 +135,7 @@ class AuthService {
             `
         });
     }
-
+//** - Completa o processo de redefinição de senha */
     public static async resetPassword(token: string, newPassword: string): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { refreshToken: token }
@@ -147,7 +149,7 @@ class AuthService {
         user.refreshToken = null;
         await this.userRepository.save(user);
     }
-
+//** - Valida os dados para aceitação dos termos */
     public static async acceptTerms(userId: number): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { 
@@ -161,10 +163,8 @@ class AuthService {
         }
     
         user.termsAccepted = true;
-        console.log(`Terms accepted for user ${userId}:`, user.termsAccepted);
         
         await this.userRepository.save(user);
-        console.log(`User ${userId} terms acceptance saved successfully`);
     }
 }
 

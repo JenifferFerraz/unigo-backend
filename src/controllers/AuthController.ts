@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import AuthService from '../services/AuthService';
 
+//     * Realiza o login do usuário
 class AuthController {
     public static async login(req: Request, res: Response): Promise<Response> {
         try {
+            // Valida os dados de login
             AuthService.validateLogin(req);
             const auth = await AuthService.login(req.body);
 
+            // Verifica se o usuário aceitou os termos
             if (!auth.termsAccepted) {
                 return res.status(202).json({
                     ...auth,
@@ -20,6 +23,7 @@ class AuthController {
         }
     }
 
+    //     * Retorna os dados do perfil do usuário atual
     public static async me(req: Request, res: Response): Promise<Response> {
         try {
             const user = await AuthService.getProfile(req.body.email);
@@ -29,6 +33,7 @@ class AuthController {
         }
     }
 
+    //     * Inicia o processo de redefinição de senha
     public static async requestPasswordReset(req: Request, res: Response): Promise<Response> {
         try {
             AuthService.validatePasswordReset(req);
@@ -41,6 +46,7 @@ class AuthController {
         }
     }
 
+    //     * Completa o processo de redefinição de senha
     public static async resetPassword(req: Request, res: Response): Promise<Response> {
         try {
             const { token, newPassword } = req.body;
@@ -54,6 +60,7 @@ class AuthController {
         }
     }
 
+    //     * Registra a aceitação dos termos pelo usuário
     public static async acceptTerms(req: Request, res: Response): Promise<Response> {
         try {
             await AuthService.acceptTerms(req.body.userId);

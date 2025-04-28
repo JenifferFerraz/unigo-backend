@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import UserService from '../services/UserService';
 
 class UserController {
+  //** Cria um novo usuário
   public async createUser(req: Request, res: Response): Promise<Response> {
     try {
       UserService.validateCreateUser(req);
