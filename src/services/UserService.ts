@@ -4,6 +4,7 @@ import { StudentProfile } from '../entities/StudentProfile';
 import { CreateUserDTO, UserResponseDTO } from '../dto/User';
 import { Request } from 'express';
 import bcrypt from 'bcrypt';
+import { sign } from 'jsonwebtoken';
 
 /**
  * Serviço responsável pelo gerenciamento de usuários
@@ -12,7 +13,7 @@ import bcrypt from 'bcrypt';
 class UserService {
     private userRepository = AppDataSource.getRepository(User);
     private studentProfileRepository = AppDataSource.getRepository(StudentProfile);
-//** - Valida os dados de criação de usuário */
+    //** - Valida os dados de criação de usuário */
     public validateCreateUser(req: Request): void {
         const requiredFields = ['name', 'email', 'password', 'cpf'];
         requiredFields.forEach(field => {
@@ -27,7 +28,7 @@ class UserService {
                 throw new Error('Student profile is required for student role');
             }
 
-            const studentProfileFields = ['phone'];
+            const studentProfileFields = ['phone', 'studentId'];
             studentProfileFields.forEach(field => {
                 if (!req.body.studentProfile[field]) {
                     throw new Error(`Missing required field in studentProfile: ${field}`);
@@ -36,55 +37,85 @@ class UserService {
         }
     }//** - Cria um novo usuário */
     public async create(data: CreateUserDTO): Promise<UserResponseDTO> {
-        try {
-            const existingEmail = await this.userRepository.findOneBy({
-                email: data.email,
-                isDeleted: false
-            });
-            if (existingEmail) {
-                throw new Error('Email already registered');
-            }
+        return await AppDataSource.transaction(async (manager) => {
+            const userRepository = manager.getRepository(User);
+            const studentProfileRepository = manager.getRepository(StudentProfile);
 
+            // Verifica e-mail (case insensitive)
+            const existingEmail = await userRepository.createQueryBuilder('user')
+                .where('LOWER(user.email) = LOWER(:email)', { email: data.email })
+                .andWhere('user.isDeleted = false')
+                .getOne();
+            if (existingEmail) throw new Error('Email already registered');
+
+            // Verifica matrícula (case insensitive)
             if (data.studentProfile?.studentId) {
-                const existingDocument = await this.studentProfileRepository.findOneBy({
-                    studentId: data.studentProfile.studentId
-                });
-                if (existingDocument) {
-                    throw new Error('Document ID already registered');
-                }
+                const existingDocument = await studentProfileRepository.createQueryBuilder('studentProfile')
+                    .where('LOWER(studentProfile.studentId) = LOWER(:studentId)', { studentId: data.studentProfile.studentId })
+                    .getOne();
+                if (existingDocument) throw new Error('Document ID (matrícula) already registered');
             }
 
-            const user = this.userRepository.create({
+            // Hash da senha antes de salvar
+            if (data.password) {
+                const salt = await bcrypt.genSalt(10);
+                data.password = await bcrypt.hash(data.password, salt);
+            }
+
+            // Gera tokens
+            const token = this.generateToken(data.email);
+            const refreshToken = await this.generateRefreshToken(data.email);
+
+            const user = userRepository.create({
                 ...data,
+                refreshToken, // Salva o refresh token no usuário
                 isDeleted: false,
                 isEmailVerified: false,
                 termsAccepted: false
             });
-            await this.userRepository.save(user);
+            await userRepository.save(user);
 
             if (data.studentProfile && user.role === 'student') {
-                const studentProfile = this.studentProfileRepository.create({
+                const studentProfile = studentProfileRepository.create({
                     ...data.studentProfile,
                     studentId: data.studentProfile.studentId || `STD${user.id.toString().padStart(6, '0')}`,
                     user
                 });
-                await this.studentProfileRepository.save(studentProfile);
+                await studentProfileRepository.save(studentProfile);
             }
 
-            const completeUser = await this.userRepository.findOne({
-                where: {
-                    id: user.id,
-                    isDeleted: false
-                },
+            const completeUser = await userRepository.findOne({
+                where: { id: user.id, isDeleted: false },
                 relations: ['studentProfile']
             });
 
-            return this.mapUserToResponse(completeUser!);
-        } catch (error: any) {
-            throw new Error(error.message || 'Error creating user');
-        }
+            // Retorna a resposta com tokens
+            const userResponse = this.mapUserToResponse(completeUser!);
+            userResponse.token = token;
+            userResponse.refreshToken = refreshToken;
+            
+            return userResponse;
+        });
     }
-//** - Atualiza os dados de um usuário */
+    //** - Gera um token JWT para o usuário */
+    private generateToken(email: string): string {
+        return sign(
+            { email }, 
+            process.env.JWT_SECRET || 'default_secret',
+            { expiresIn: '1h' }
+        );
+    }
+
+    //** - Gera um refresh token */
+    private async generateRefreshToken(email: string): Promise<string> {
+        return sign(
+            { email }, 
+            process.env.JWT_REFRESH_SECRET || 'default_refresh_secret',
+            { expiresIn: '7d' }
+        );
+    }
+
+    //** - Atualiza os dados de um usuário */
     private mapUserToResponse(user: User): UserResponseDTO {
         return {
             id: user.id,

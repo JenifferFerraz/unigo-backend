@@ -9,13 +9,13 @@ const app = express();
 
 
 app.use(cors({
-  origin: ['http://localhost:49987', 'http://localhost:3000'],
+  origin: ['http://localhost:51550', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json());  
 
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes); 

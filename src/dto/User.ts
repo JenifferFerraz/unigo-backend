@@ -1,4 +1,3 @@
-
 export interface CreateUserDTO {
   name: string;
   email: string;
@@ -29,5 +28,6 @@ export interface UserResponseDTO {
     createdAt: Date;
     updatedAt: Date;
     termsAccepted: boolean;
-
+    token?: string;
+    refreshToken?: string;
 }
