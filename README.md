@@ -41,13 +41,17 @@ DB_USER=seu_usuario
 DB_PASSWORD=sua_senha
 DB_NAME=unigo_db
 JWT_SECRET=seu_secret_jwt
-SMTP_HOST=seu_smtp_host
-SMTP_PORT=587
-SMTP_USER=seu_email
-SMTP_PASS=sua_senha
-SMTP_FROM=seu_email
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001  # Porta padrão do frontend em desenvolvimento
 ```
+
+## 🔒 Configuração CORS
+
+O backend está configurado para aceitar conexões de:
+- Qualquer origem localhost (desenvolvimento)
+- URLs específicas definidas em FRONTEND_URL (produção)
+- Requisições sem origem (aplicativo mobile)
+
+Não é necessário alterar a configuração CORS ao mudar a porta do frontend em desenvolvimento.
 
 4. Execute as migrações do banco de dados:
 ```bash
@@ -69,4 +73,5 @@ npm run dev
 - `npm run migration:generate` - Gera uma nova migração
 - `npm run migration:run` - Executa migrações pendentes
 - `npm run migration:revert` - Reverte a última migração
+- `npm run seed:all` - Executa todos os seeders em sequência
 
