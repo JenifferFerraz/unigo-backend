@@ -8,6 +8,6 @@ authRoutes.post('/login', AuthController.login.bind(AuthController));
 authRoutes.get('/me', TokenNode.authorize.bind(TokenNode), AuthController.me.bind(AuthController));
 authRoutes.post('/forgot-password', AuthController.requestPasswordReset.bind(AuthController));
 authRoutes.post('/reset-password', AuthController.resetPassword.bind(AuthController));
-authRoutes.post('/accept-terms', TokenNode.authorize.bind(TokenNode), AuthController.acceptTerms.bind(AuthController)
-);
+authRoutes.post('/accept-terms', TokenNode.authorize.bind(TokenNode), AuthController.acceptTerms.bind(AuthController));
+
 export { authRoutes };
