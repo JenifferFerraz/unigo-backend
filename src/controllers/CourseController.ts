@@ -19,6 +19,7 @@ class CourseController {
             return res.status(500).json({ message: 'Internal server error', error });
         }
     }
+    
     // * - Criação de cursos em massa
     async createMany(req: Request, res: Response): Promise<Response> {
         try {
@@ -27,6 +28,17 @@ class CourseController {
         } catch (error) {
             return res.status(500).json({ message: 'Internal server error', error });
         }
+    }
+    
+    // * - Busca todos os cursos
+    async findAll(req: Request, res: Response): Promise<Response> {
+        try {
+            const courses = await this.courseService.findAll();
+            return res.status(200).json(courses);
+        } catch (error) {
+            return res.status(500).json({ message: 'Internal server error', error });
+        }
+    }
 }
-}
+
 export default new CourseController();
