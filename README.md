@@ -46,7 +46,7 @@ SMTP_PORT=587
 SMTP_USER=seu_email
 SMTP_PASS=sua_senha
 SMTP_FROM=seu_email
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001
 ```
 
 4. Execute as migrações do banco de dados:
