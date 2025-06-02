@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     shadow \
     git \
     gcompat && \
+    npm install -g ts-node-dev && \
     usermod -u ${DK_UID:-1000} node && \
     groupmod -g ${DK_GID:-1000} node
 
