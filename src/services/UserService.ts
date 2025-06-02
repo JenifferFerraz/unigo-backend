@@ -3,7 +3,7 @@ import { User } from '../entities/User';
 import { StudentProfile } from '../entities/StudentProfile';
 import { CreateUserDTO, UserResponseDTO } from '../dto/User';
 import { Request } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { sign } from 'jsonwebtoken';
 
 /**

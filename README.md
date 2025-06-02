@@ -11,7 +11,7 @@ Backend da aplicação Unigo, uma plataforma educacional desenvolvida com Node.j
 - PostgreSQL
 - JWT para autenticação
 - Nodemailer para envio de emails
-- Bcrypt para criptografia de senhas
+- Bcryptjs para criptografia de senhas
 
 ## 📋 Pré-requisitos
 
