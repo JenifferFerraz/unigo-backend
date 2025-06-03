@@ -6,8 +6,6 @@ package-lock.json
 yarn.lock
 
 .env
-.env.local
-.env.*.local
 
 dist/
 build/
