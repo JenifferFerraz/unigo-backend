@@ -26,7 +26,8 @@ COPY --chown=node:node package*.json ./
 
 # Instala as dependências do projeto DENTRO DO CONTÊINER
 RUN npm install --legacy-peer-deps && \
-    npm install wrappy once --save
+    npm install wrappy once --save && \
+    npm install
 
 # Copia o restante do código da aplicação
 COPY --chown=node:node . .
