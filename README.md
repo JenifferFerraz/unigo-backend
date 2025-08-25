@@ -11,7 +11,7 @@ Backend da aplicação Unigo, uma plataforma educacional desenvolvida com Node.j
 - PostgreSQL
 - JWT para autenticação
 - Nodemailer para envio de emails
-- Bcrypt para criptografia de senhas
+- Bcryptjs para criptografia de senhas
 
 ## 📋 Pré-requisitos
 
@@ -41,7 +41,12 @@ DB_USER=seu_usuario
 DB_PASSWORD=sua_senha
 DB_NAME=unigo_db
 JWT_SECRET=seu_secret_jwt
-FRONTEND_URL=http://localhost:3001  # Porta padrão do frontend em desenvolvimento
+SMTP_HOST=seu_smtp_host
+SMTP_PORT=587
+SMTP_USER=seu_email
+SMTP_PASS=sua_senha
+SMTP_FROM=seu_email
+FRONTEND_URL=http://localhost:3001
 ```
 
 ## 🔒 Configuração CORS

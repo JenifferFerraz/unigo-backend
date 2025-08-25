@@ -6,8 +6,6 @@ package-lock.json
 yarn.lock
 
 .env
-.env.local
-.env.*.local
 
 dist/
 build/
@@ -40,4 +38,6 @@ tmp/
 temp/
 
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+pgdata/

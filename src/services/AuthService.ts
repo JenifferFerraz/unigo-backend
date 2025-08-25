@@ -3,7 +3,7 @@ import { AppDataSource } from '../config/data-source';
 import { User } from '../entities/User';
 import { LoginDTO } from '../dto/Auth';
 import { Request } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import * as nodemailer from 'nodemailer';
 
 class AuthService {

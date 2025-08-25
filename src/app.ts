@@ -20,7 +20,7 @@ app.use(cors({
       return callback(null, true);
     }
     
-    const allowedDomains = [process.env.FRONTEND_URL || 'http://localhost:3000'];
+    const allowedDomains = [process.env.FRONTEND_URL || 'http://localhost:3001'];
     if (allowedDomains.indexOf(origin) !== -1) {
       return callback(null, true);
     }

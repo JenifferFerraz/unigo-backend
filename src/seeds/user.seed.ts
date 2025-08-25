@@ -2,7 +2,7 @@ import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import { StudentProfile } from "../entities/StudentProfile";
 import { Course } from "../entities/Course";
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 async function seedUsers() {
     console.log("Iniciando seed de usuários...");
