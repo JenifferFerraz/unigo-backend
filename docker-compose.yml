@@ -17,6 +17,7 @@ services:
     depends_on:
       - unigo-postgres
     command: npx ts-node src/seeds/run-all.seed.ts
+    restart: "on-failure"
     networks:
       - unigo_network
 
