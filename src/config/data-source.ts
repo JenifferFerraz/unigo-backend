@@ -23,11 +23,11 @@ export const AppDataSource = new DataSource(
         }
         : {
             type: "postgres",
-            host: process.env.DB_HOST,
-            port: parseInt(process.env.DB_PORT || "5432"),
-            username: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
+            host: process.env.POSTGRESQL_HOST,
+            port: parseInt(process.env.POSTGRESQL_PORT || "5432"),
+            username: process.env.POSTGRESQL_USERNAME,
+            password: process.env.POSTGRESQL_PASSWORD,
+            database: process.env.POSTGRESQL_DATABASE,
             synchronize: false,
             logging: true,
             entities: [User, Course, StudentProfile, Location, CourseLocation],
