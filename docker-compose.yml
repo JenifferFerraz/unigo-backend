@@ -1,0 +1,27 @@
+services:
+  unigo-postgres:
+    image: bitnami/postgresql
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRESQL_USERNAME=postgres
+      - POSTGRESQL_PASSWORD=postgres
+      - POSTGRESQL_DATABASE=unigo
+    volumes:
+      - ./postgres_data:/bitnami/postgresql
+    networks:
+      - unigo_network
+
+  unigo-seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - unigo-postgres
+    command: npx ts-node src/seeds/run-all.seed.ts
+    networks:
+      - unigo_network
+
+networks:
+  unigo_network:
+    driver: bridge
