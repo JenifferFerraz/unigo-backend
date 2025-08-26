@@ -37,6 +37,7 @@ coverage/
 tmp/
 temp/
 
+postgres_data/
 .DS_Store
 Thumbs.db
 
