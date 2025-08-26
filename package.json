@@ -5,14 +5,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "typeorm": "typeorm-ts-node-commonjs",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "test-api": "node src/test-api.js",
     "db:migrate": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
     "db:reset": "npm run db:drop && npm run db:migrate",
     "migration:generate": "npm run typeorm migration:generate -- -d src/config/data-source.ts",
     "migration:run": "npm run typeorm migration:run -- -d src/config/data-source.ts",
     "migration:revert": "npm run typeorm migration:revert -- -d src/config/data-source.ts",
-    "seed:all": "ts-node src/seeds/run-all.seed.ts"
+  "seed:all": "ts-node src/seeds/run-all.seed.ts",
+  "start": "ts-node src/seeds/run-all.seed.ts && ts-node src/server.ts"
   },
   "keywords": [],
   "author": "",
