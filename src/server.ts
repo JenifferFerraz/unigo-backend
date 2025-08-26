@@ -1,4 +1,4 @@
-import '../interface/express';
+import './interface/express';
 import app from './app';
 import 'module-alias/register';
 
