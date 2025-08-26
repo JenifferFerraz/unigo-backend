@@ -7,6 +7,8 @@ import { StudentProfile } from "../entities/StudentProfile";
 import { Location, CourseLocation } from "../entities/Location";
 
 dotenv.config();
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+console.log('DB_HOST:', process.env.DB_HOST);
 //** - Configuração do banco de dados
 export const AppDataSource = new DataSource(
     process.env.DATABASE_URL
