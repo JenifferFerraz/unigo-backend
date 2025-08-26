@@ -8,16 +8,28 @@ import { Location, CourseLocation } from "../entities/Location";
 
 dotenv.config();
 //** - Configuração do banco de dados
-export const AppDataSource = new DataSource({
-    type: "postgres",
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || "5432"),
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    synchronize: false,
-    logging: true,
-    entities: [User, Course, StudentProfile, Location, CourseLocation],
-    migrations: [__dirname + '/../migrations/*.{ts,js}'],
-    subscribers: []
-});
+export const AppDataSource = new DataSource(
+    process.env.DATABASE_URL
+        ? {
+            type: "postgres",
+            url: process.env.DATABASE_URL,
+            synchronize: false,
+            logging: true,
+            entities: [User, Course, StudentProfile, Location, CourseLocation],
+            migrations: [__dirname + '/../migrations/*.{ts,js}'],
+            subscribers: []
+        }
+        : {
+            type: "postgres",
+            host: process.env.DB_HOST,
+            port: parseInt(process.env.DB_PORT || "5432"),
+            username: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            synchronize: false,
+            logging: true,
+            entities: [User, Course, StudentProfile, Location, CourseLocation],
+            migrations: [__dirname + '/../migrations/*.{ts,js}'],
+            subscribers: []
+        }
+);
