@@ -2,22 +2,34 @@ services:
   unigo-postgres:
     image: bitnami/postgresql
     ports:
-      - "5432:5432"
-    env_file:
-      - .env
+      - "5433:5432"
+    environment:
+      - POSTGRESQL_HOST=unigo-postgres
+      - POSTGRESQL_PORT=5432
+      - POSTGRESQL_USERNAME=${DB_USER}
+      - POSTGRESQL_PASSWORD=${DB_PASSWORD}
+      - POSTGRESQL_DATABASE=${DB_NAME}
     volumes:
       - ./postgres_data:/bitnami/postgresql
     networks:
       - unigo_network
 
-  unigo-seed:
+  unigo-app:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - unigo-postgres
-    command: npx ts-node src/seeds/run-all.seed.ts
-    restart: "on-failure"
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRESQL_HOST=unigo-postgres
+      - POSTGRESQL_PORT=5432
+      - POSTGRESQL_USERNAME=${DB_USER}
+      - POSTGRESQL_PASSWORD=${DB_PASSWORD}
+      - POSTGRESQL_DATABASE=${DB_NAME}
     networks:
       - unigo_network
 
