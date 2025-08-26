@@ -34,4 +34,4 @@ COPY --chown=node:node . .
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npm run migration:run && ts-node src/seeds/run-all.seed.ts && ts-node src/server.ts"]
