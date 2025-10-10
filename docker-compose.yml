@@ -4,8 +4,8 @@ services:
     ports:
       - "5433:5432"
     environment:
-      - POSTGRESQL_HOST=unigo-postgres
-      - POSTGRESQL_PORT=5432
+      - POSTGRESQL_HOST=${DB_HOST}
+      - POSTGRESQL_PORT=${DB_PORT}
       - POSTGRESQL_USERNAME=${DB_USER}
       - POSTGRESQL_PASSWORD=${DB_PASSWORD}
       - POSTGRESQL_DATABASE=${DB_NAME}

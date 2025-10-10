@@ -1,8 +1,7 @@
 import express from 'express';
 import cors from 'cors';  
-import { AppDataSource } from './config/data-source';
 import { userRoutes } from './routes/user.routes';
-import { authRoutes } from './routes//auth.routes';
+import { authRoutes } from './routes/auth.routes';
 import { courseRoutes } from './routes/course.routes';
 import { locationRoutes } from './routes/location.routes';
 import { notificationRoutes } from './routes/notification.routes';
@@ -39,18 +38,5 @@ app.use('/auth', authRoutes);
 app.use('/api', courseRoutes);
 app.use('/locations', locationRoutes);
 app.use('/notifications', notificationRoutes);
-
-// Health check endpoint for connectivity and discovery validation
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-AppDataSource.initialize()
-  .then(() => {
-    console.log('📦 Banco conectado com sucesso');
-  })
-  .catch((err) => {
-    console.error('Erro ao conectar com o banco', err);
-  });
 
 export default app;
