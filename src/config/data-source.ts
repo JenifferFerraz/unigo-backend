@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "../entities/User";
 import { Course } from "../entities/Course";
+import { Exam } from "../entities/Exam";
 import * as dotenv from 'dotenv';
 import { StudentProfile } from "../entities/StudentProfile";
 import { Location, CourseLocation } from "../entities/Location";
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource(
             url: process.env.DATABASE_URL,
             synchronize: false,
             logging: true,
-            entities: [User, Course, StudentProfile, Location, CourseLocation],
+            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam],
             migrations: [__dirname + '/../migrations/*.{ts,js}'],
             subscribers: []
         }
@@ -30,7 +31,7 @@ export const AppDataSource = new DataSource(
             database: process.env.POSTGRESQL_DATABASE,
             synchronize: false,
             logging: true,
-            entities: [User, Course, StudentProfile, Location, CourseLocation],
+            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam],
             migrations: [__dirname + '/../migrations/*.{ts,js}'],
             subscribers: []
         }

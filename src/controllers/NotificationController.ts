@@ -57,6 +57,18 @@ class NotificationController {
             return res.status(400).json({ message: error.message });
         }
     }
+
+    /**
+     * Public events for academic calendar (no auth required)
+     */
+    public static async getPublicEvents(req: Request, res: Response): Promise<Response> {
+        try {
+            const events = await NotificationService.getPublicEvents();
+            return res.status(200).json(events);
+        } catch (error: any) {
+            return res.status(400).json({ message: error.message });
+        }
+    }
 }
 
 export default NotificationController;
