@@ -132,6 +132,18 @@ class NotificationService {
             }
         ];
     }
+
+    /**
+     * Public academic events (calendar) - meant to be public-facing
+     */
+    public async getPublicEvents(): Promise<any[]> {
+        // In the future this could read from a dedicated events table.
+        return [
+            { date: '12/10/2025', title: 'Último prazo para lançamento das notas de 1ª VA no Lyceum' },
+            { date: '15/10/2025', title: 'Dia do Professor' },
+            { date: '20/10/2025', title: 'VI Congresso Internacional de Pesquisa, Ensino e Extensão (CIPEEX)' }
+        ];
+    }
 }
 
 export default new NotificationService();

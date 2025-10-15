@@ -6,6 +6,7 @@ import { authRoutes } from './routes//auth.routes';
 import { courseRoutes } from './routes/course.routes';
 import { locationRoutes } from './routes/location.routes';
 import { notificationRoutes } from './routes/notification.routes';
+import { examRoutes } from './routes/exam.routes';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/auth', authRoutes);
 app.use('/api', courseRoutes);
 app.use('/locations', locationRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/exams', examRoutes);
 
 // Health check endpoint for connectivity and discovery validation
 app.get('/health', (_req, res) => {
