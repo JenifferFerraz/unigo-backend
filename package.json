@@ -9,15 +9,15 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "typeorm": "typeorm-ts-node-commonjs",
-  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "test-api": "node src/test-api.js",
     "db:migrate": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
     "db:reset": "npm run db:drop && npm run db:migrate",
     "migration:generate": "npm run typeorm migration:generate -- -d src/config/data-source.ts",
     "migration:run": "npm run typeorm migration:run -- -d src/config/data-source.ts",
     "migration:revert": "npm run typeorm migration:revert -- -d src/config/data-source.ts",
-  "seed:all": "ts-node src/seeds/run-all.seed.ts",
-  "start": "ts-node src/seeds/run-all.seed.ts && ts-node src/server.ts"
+    "seed:all": "ts-node src/seeds/run-all.seed.ts",
+    "start": "ts-node src/seeds/run-all.seed.ts && ts-node src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -25,34 +25,35 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "bonjour-service": "^1.2.1",
     "class-validator": "^0.14.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
+    "multer": "^2.0.2",
     "nodemailer": "^6.10.1",
     "pg": "^8.14.1",
     "reflect-metadata": "^0.2.2",
     "ts-node": "^10.9.2",
-    "typeorm": "^0.3.22",
-    "bonjour-service": "^1.2.1"
+    "typeorm": "^0.3.22"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/module-alias": "^2.0.4",
     "@types/node": "^22.14.1",
     "@types/nodemailer": "^6.4.17",
     "@types/qs": "^6.9.18",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.3",
-    "@types/jest": "^29.5.12",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
     "supertest": "^6.3.4",
-    "ts-jest": "^29.1.2"
+    "ts-jest": "^29.1.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
   }
 }
