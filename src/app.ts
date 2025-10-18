@@ -7,11 +7,15 @@ import { courseRoutes } from './routes/course.routes';
 import { locationRoutes } from './routes/location.routes';
 import { notificationRoutes } from './routes/notification.routes';
 import { examRoutes } from './routes/exam.routes';
+import * as PreventSqlHtmlInjection from './middlewares/PreventSqlHtmlInjection';
 
 const app = express();
 
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+app.use(PreventSqlHtmlInjection.preventSqlHtmlInjection);
 
 app.use(cors({
   origin: (origin, callback) => {

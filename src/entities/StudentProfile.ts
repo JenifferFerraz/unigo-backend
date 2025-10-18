@@ -10,8 +10,8 @@ export class StudentProfile {
     @Column()
     studentId: string;
 
-    @Column()
-    phone: string;
+    @Column({ nullable: true })
+    phone?: string;
 
     @Column({ nullable: true })
     courseId: number;
