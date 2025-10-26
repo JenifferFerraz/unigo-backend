@@ -5,7 +5,7 @@ import { Room } from '../entities/Room';
 export class RoomController {
     static async getAll(req: Request, res: Response) {
         const repo = AppDataSource.getRepository(Room);
-        const q = (req.query.q || '').toString().toLowerCase();
+        const q = (req.query.search || req.query.q || '').toString().toLowerCase();
         let rooms;
         if (q) {
             rooms = await repo.createQueryBuilder('room')

@@ -1,6 +1,6 @@
 import { InternalRoute } from '../entities/InternalRoute';
 
-function haversine(a: number[], b: number[]): number {
+export function haversine(a: number[], b: number[]): number {
   const toRad = (deg: number) => deg * Math.PI / 180;
   const R = 6371000;
   const dLat = toRad(b[1] - a[1]);
@@ -86,7 +86,6 @@ function findNearestNode(graph: Record<string, Record<string, number>>, point: n
 
 export function findShortestInternalRoute(routes: InternalRoute[], start: number[], end: number[]) {
   const graph = buildGraph(routes);
-  // Se start ou end não estão no grafo, pega o nó mais próximo
   const startKey = Object.prototype.hasOwnProperty.call(graph, start.join(','))
     ? start.join(',')
     : findNearestNode(graph, start);
@@ -94,14 +93,7 @@ export function findShortestInternalRoute(routes: InternalRoute[], start: number
     ? end.join(',')
     : findNearestNode(graph, end);
 
-  // LOGS PARA DEBUG
-  console.log('--- findShortestInternalRoute DEBUG ---');
-  console.log('start:', start, 'startKey:', startKey);
-  console.log('end:', end, 'endKey:', endKey);
-  console.log('graph nodes:', Object.keys(graph));
-
   const path = dijkstra(graph, startKey, endKey);
-  console.log('calculated path:', path);
-  console.log('--------------------------------------');
+
   return path.map(p => p.split(',').map(Number));
 }
