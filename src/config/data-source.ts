@@ -5,6 +5,10 @@ import { Course } from "../entities/Course";
 import { Exam } from "../entities/Exam";
 import { Structure } from "../entities/Structure";
 import { InternalRoute } from "../entities/InternalRoute";
+import { Schedule } from "../entities/Schedule";
+import { Event } from "../entities/Event";
+import { AcademicCalendar } from "../entities/AcademicCalendar";
+import { Feedback } from "../entities/Feedback";
 import * as dotenv from 'dotenv';
 import { StudentProfile } from "../entities/StudentProfile";
 import { Location, CourseLocation } from "../entities/Location";
@@ -21,7 +25,7 @@ export const AppDataSource = new DataSource(
             url: process.env.DATABASE_URL,
             synchronize: false,
             logging: true,
-            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam, Structure, InternalRoute, Room],
+            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam, Structure, InternalRoute, Room, Schedule, Event, AcademicCalendar, Feedback],
             migrations: [__dirname + '/../migrations/*.{ts,js}'],
             subscribers: []
         }
@@ -34,7 +38,7 @@ export const AppDataSource = new DataSource(
             database: process.env.POSTGRESQL_DATABASE,
             synchronize: false,
             logging: true,
-            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam, Structure, InternalRoute, Room],
+            entities: [User, Course, StudentProfile, Location, CourseLocation, Exam, Structure, InternalRoute, Room, Schedule, Event, AcademicCalendar, Feedback],
             migrations: [__dirname + '/../migrations/*.{ts,js}'],
             subscribers: []
         }

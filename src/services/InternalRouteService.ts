@@ -21,7 +21,7 @@ export class InternalRouteService {
     start: number[],
     roomId?: number
   ): Promise<
-    | { pathToStairs: number[][]; stairsTransition: { from: number[]; to: number[] }; pathFromStairs: number[][] }
+    | { pathToStairs: number[][]; stairsTransition: { from: number[]; to: number[] }; pathFromStairs: number[][]; destinationFloor: number }
     | { path: number[][] }
     | null
   > {
@@ -71,6 +71,7 @@ export class InternalRouteService {
       pathToStairs,
       stairsTransition: { from: nearestStairStart, to: nearestStairEnd },
       pathFromStairs,
+      destinationFloor: destFloor,
     };
   }
 

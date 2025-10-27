@@ -10,6 +10,11 @@ import { notificationRoutes } from './routes/notification.routes';
 import { examRoutes } from './routes/exam.routes';
 import { structureRoutes } from './routes/structure.routes';
 import { internalRouteRoutes } from './routes/internalRoute.routes';
+import { uploadRoutes } from './routes/upload.routes';
+import { scheduleRoutes } from './routes/schedule.routes';
+import { eventRoutes } from './routes/event.routes';
+import { academicCalendarRoutes } from './routes/academicCalendar.routes';
+import feedbackRoutes from './routes/feedback.routes';
 import * as PreventSqlHtmlInjection from './middlewares/PreventSqlHtmlInjection';
 
 const app = express();
@@ -51,6 +56,11 @@ app.use('/exams', examRoutes);
 app.use('/structure', structureRoutes);
 app.use('/internal-route', internalRouteRoutes);
 app.use('/room', roomRouter);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/academic-calendar', academicCalendarRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Health check endpoint for connectivity and discovery validation
 app.get('/health', (_req, res) => {
