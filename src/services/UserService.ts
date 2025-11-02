@@ -15,27 +15,18 @@ class UserService {
     private studentProfileRepository = AppDataSource.getRepository(StudentProfile);
     //** - Valida os dados de criação de usuário */
     public validateCreateUser(req: Request): void {
-        const requiredFields = ['name', 'email', 'password', 'cpf'];
+        const requiredFields = ['name', 'email', 'password'];
         requiredFields.forEach(field => {
             if (!req.body[field]) {
                 throw new Error(`Missing required field: ${field}`);
             }
-        });
-        req.body.termsAccepted = false;
-
-        if (req.body.role === 'student' || !req.body.role) {
-            if (!req.body.studentProfile) {
-                throw new Error('Student profile is required for student role');
+            const value = req.body[field];
+            if (typeof value === 'string' && (/select\s|insert\s|update\s|delete\s|<script>|<html>|<body>/i).test(value)) {
+                throw new Error(`Invalid value for field: ${field}`);
             }
-
-            const studentProfileFields = ['phone', 'studentId'];
-            studentProfileFields.forEach(field => {
-                if (!req.body.studentProfile[field]) {
-                    throw new Error(`Missing required field in studentProfile: ${field}`);
-                }
-            });
-        }
-    }//** - Cria um novo usuário */
+        });
+        // Não sobrescreve termsAccepted, respeita o valor enviado pelo frontend
+    }
     public async create(data: CreateUserDTO): Promise<UserResponseDTO> {
         return await AppDataSource.transaction(async (manager) => {
             const userRepository = manager.getRepository(User);
@@ -68,10 +59,10 @@ class UserService {
 
             const user = userRepository.create({
                 ...data,
-                refreshToken, // Salva o refresh token no usuário
+                refreshToken,
                 isDeleted: false,
                 isEmailVerified: false,
-                termsAccepted: false
+                termsAccepted: data.termsAccepted ?? false
             });
             await userRepository.save(user);
 
@@ -89,12 +80,8 @@ class UserService {
                 relations: ['studentProfile']
             });
 
-            // Retorna a resposta com tokens
-            const userResponse = this.mapUserToResponse(completeUser!);
-            userResponse.token = token;
-            userResponse.refreshToken = refreshToken;
-            
-            return userResponse;
+            // Retorna apenas os dados essenciais do usuário
+            return this.mapUserToResponse(completeUser!);
         });
     }
     //** - Gera um token JWT para o usuário */
@@ -120,17 +107,9 @@ class UserService {
         return {
             id: user.id,
             name: user.name,
-            cpf: user.cpf,
             email: user.email,
-            avatar: user.avatar,
-            role: user.role,
-            isEmailVerified: user.isEmailVerified,
-            isDeleted: user.isDeleted,
-            termsAccepted: user.termsAccepted,
             documentId: user.studentProfile?.studentId,
-            phone: user.studentProfile?.phone,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt
+            phone: user.studentProfile?.phone
         };
     }
 }

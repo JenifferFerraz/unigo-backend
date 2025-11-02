@@ -15,19 +15,9 @@ export interface CreateUserDTO {
 }
 
 export interface UserResponseDTO {
-    id: number;
-    name: string;
-    cpf: string;
-    email: string;
-    avatar?: string;
-    role: 'student' | 'professor' | 'admin';
-    documentId?: string;
-    isEmailVerified: boolean;
-    isDeleted: boolean;
-    phone?: string;
-    createdAt: Date;
-    updatedAt: Date;
-    termsAccepted: boolean;
-    token?: string;
-    refreshToken?: string;
+  id: number;
+  name: string;
+  email: string;
+  documentId?: string;
+  phone?: string;
 }

@@ -16,8 +16,8 @@ export class User {
     @Column()
     password: string;
 
-    @Column()
-    cpf:string;
+    @Column({ nullable: true })
+    cpf?: string;
 
     @Column({ default: false })
     termsAccepted: boolean;
