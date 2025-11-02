@@ -12,10 +12,9 @@ export class Room {
     @Column({ nullable: true })
     description?: string;
 
-    // Pode ser Polygon ou Point
     @Column({
         type: 'geometry',
-        spatialFeatureType: 'Geometry', // aceita Polygon ou Point
+        spatialFeatureType: 'Geometry',
         srid: 4326,
         nullable: true,
     })
