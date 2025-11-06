@@ -34,4 +34,5 @@ COPY --chown=node:node . .
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx ts-node src/server.ts"]
+# Script de inicialização que executa migrações, seeds e depois inicia o servidor
+CMD ["sh", "-c", "npm run migration:run && (npx ts-node src/seeds/seed-bloco-j.ts || true) && (npx ts-node src/seeds/internalRoute.seed.ts || true) && npx ts-node src/server.ts"]

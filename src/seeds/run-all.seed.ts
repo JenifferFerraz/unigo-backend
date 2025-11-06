@@ -12,7 +12,8 @@ async function runSeeders() {
             'user.seed.ts',         
             'course-locations.seed.ts',
             'exams.seed.ts',
-            'internalRoute.seed.ts'
+            'internalRoute.seed.ts',
+            'seed-bloco-j.ts'
         ];
 
         for (const seeder of seeders) {
