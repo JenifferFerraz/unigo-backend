@@ -33,7 +33,7 @@ async function seedUsers() {
             email: "teste@hotmail.com",
             password: hashedPassword,
             cpf: "1135165315135",
-            role: "student",
+            role: "admin",
             isEmailVerified: true,
             isDeleted: false,
             termsAccepted: true,

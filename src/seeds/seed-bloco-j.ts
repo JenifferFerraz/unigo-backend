@@ -21,6 +21,7 @@ const roomsGeojsonJ1 = readGeoJsonIfExists(path.join(__dirname, '../mapeamentos/
 const roomsGeojsonJ2 = readGeoJsonIfExists(path.join(__dirname, '../mapeamentos/Bloco-J-2-Andar.geojson'));
 const roomsGeojsonJ3 = readGeoJsonIfExists(path.join(__dirname, '../mapeamentos/Bloco-J-3-Andar.geojson'));
 
+
 async function seedBlocoJ() {
     try {
         await AppDataSource.initialize();

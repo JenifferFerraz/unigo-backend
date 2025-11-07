@@ -1,0 +1,12 @@
+{
+"type": "FeatureCollection",
+"name": "Rota-B-2-Terreo",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943649080878991, -16.295119144853327 ], [ -48.9437222, -16.2951049 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 2, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943649080878991, -16.295119144853327 ], [ -48.94365412412953, -16.295155579748563 ], [ -48.9438406, -16.295118 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 4, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943649080878991, -16.295119144853327 ], [ -48.943633143148794, -16.295014075174098 ], [ -48.943706727974728, -16.295002422401275 ], [ -48.9437017, -16.2949621 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 10, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943706727974728, -16.295002422401275 ], [ -48.943735647850929, -16.294997004844369 ], [ -48.9437266, -16.2949582 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 20, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943735647850929, -16.294997004844369 ], [ -48.943758573945139, -16.294992089693569 ], [ -48.943726750081062, -16.294852233992586 ], [ -48.943741038104328, -16.294849558631004 ], [ -48.9437339, -16.2948265 ] ] ] } }
+]
+}

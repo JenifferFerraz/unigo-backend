@@ -17,6 +17,7 @@
     "migration:run": "npm run typeorm migration:run -- -d src/config/data-source.ts",
     "migration:revert": "npm run typeorm migration:revert -- -d src/config/data-source.ts",
     "seed:all": "ts-node src/seeds/run-all.seed.ts",
+    "seed:external": "ts-node src/seeds/seed-external-routes.ts",
     "start": "ts-node src/seeds/run-all.seed.ts && ts-node src/server.ts"
   },
   "keywords": [],
