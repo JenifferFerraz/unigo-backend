@@ -3,16 +3,16 @@ import { join } from 'path';
 
 async function runSeeders() {
     console.log("Iniciando execução dos seeders...");
-    
+
     try {
-  
+
         const seeders = [
-            'courses.seed.ts',     
-            'location.seed.ts',     
-            'user.seed.ts',         
+            'courses.seed.ts',
+            'location.seed.ts',
+            'user.seed.ts',
             'course-locations.seed.ts',
             'exams.seed.ts',
-            'internalRoute.seed.ts'
+            'seed-all.blocks.ts'
         ];
 
         for (const seeder of seeders) {
@@ -26,7 +26,7 @@ async function runSeeders() {
         }
 
         console.log("\n✨ Todos os seeders foram executados!");
-        
+
     } catch (error) {
         console.error("Erro ao executar seeders:", error);
         process.exit(1);

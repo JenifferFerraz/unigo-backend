@@ -4,17 +4,15 @@ import { findShortestInternalRoute, haversine } from './internalRoutePathfinding
 import { Room } from '../entities/Room';
 import { Structure } from '../entities/Structure';
 import { In } from 'typeorm';
+import { ExternalRouteService } from './ExternalRouteService';
 
 export class InternalRouteService {
- 
+  private externalService = new ExternalRouteService();
 
-  /**
-   * Find shortest route, supporting multi-floor navigation using stairs.
-   * If start and destination are on different floors, finds path to nearest stairs, then from stairs on target floor to destination.
-   */
   /**
    * Find shortest route, supporting multi-floor navigation using stairs.
    * Returns separated paths for each floor for progressive display.
+   * NOVO: Adiciona rota externa do usuário até a entrada da estrutura
    */
   async findShortestRouteToDestination(
     structureId: number,
@@ -38,25 +36,42 @@ export class InternalRouteService {
   > {
     const end = await this.getDestinationCoords(roomId, structureId);
     if (!end) {
-   
       return null;
     }
 
     // Find destination room and its floor
     let destFloor = startFloor;
     if (roomId) {
+      console.log('[DEBUG] Room ID provided:', roomId);
       const roomRepo = AppDataSource.getRepository(Room);
       const room = await roomRepo.findOne({ where: { id: Number(roomId) } });
       if (room && typeof room.floor === 'number') destFloor = room.floor;
     }
 
-    if (startFloor === destFloor) {
-      const routes = await this.getRoutesByStructure(structureId, startFloor);
-      const path = await this.findShortestRoute(structureId, startFloor, start, end);
-      return { path };
+    const nearestDoor = await this.externalService.findNearestDoorPoint(start);
+    
+    let entryPoint = start;
+    let externalPath: number[][] = [];
+
+    if (nearestDoor && nearestDoor.distance < 1000) { 
+      console.log(`🚪 Porta encontrada a ${nearestDoor.distance.toFixed(2)}m`);
+      entryPoint = nearestDoor.doorPoint;
+      
+      externalPath = await this.externalService.calculateExternalPath(start, nearestDoor.doorPoint);
     }
 
-    // Buscar todos os andares disponíveis da estrutura
+    if (startFloor === destFloor) {
+      const path = await this.findShortestRoute(structureId, startFloor, entryPoint, end);
+      
+      if (!path) return null;
+
+      const fullPath = externalPath.length > 0 
+        ? [...externalPath, ...path]
+        : path;
+
+      return { path: fullPath };
+    }
+
     const allFloorsData = await this.routeRepo
       .createQueryBuilder('route')
       .select('DISTINCT route.floor', 'floor')
@@ -66,10 +81,8 @@ export class InternalRouteService {
     
     const allAvailableFloors = allFloorsData.map(f => f.floor).sort((a, b) => a - b);
 
-    // Determinar direção (subindo ou descendo)
     const isGoingUp = startFloor < destFloor;
     
-    // Filtrar apenas os andares entre o início e o destino (inclusive) que têm rotas
     const floorsInRoute = allAvailableFloors.filter(floor => 
       isGoingUp 
         ? floor >= startFloor && floor <= destFloor
@@ -81,32 +94,32 @@ export class InternalRouteService {
       return null;
     }
 
-    // Arrays para armazenar todos os segmentos da rota
     const floorPaths: { floor: number; path: number[][] }[] = [];
     const stairTransitions: { from: number[]; to: number[]; fromFloor: number; toFloor: number }[] = [];
 
-    // Percorrer cada andar no caminho
     for (let i = 0; i < floorsInRoute.length; i++) {
       const currentFloor = floorsInRoute[i];
       const isFirstFloor = i === 0;
       const isLastFloor = i === floorsInRoute.length - 1;
 
-      // Primeiro andar: rota do ponto inicial até a escada
       if (isFirstFloor) {
         const stairsCurrentFloor = await this.getStairs(structureId, currentFloor);
         if (!stairsCurrentFloor.length) {
           return null;
         }
 
-        const nearestStair = this.findNearestStair(stairsCurrentFloor, start);
+        const nearestStair = this.findNearestStair(stairsCurrentFloor, entryPoint);
         if (!nearestStair) return null;
 
-        const pathToStair = await this.findShortestRoute(structureId, currentFloor, start, nearestStair);
+        const pathToStair = await this.findShortestRoute(structureId, currentFloor, entryPoint, nearestStair);
         if (!pathToStair) return null;
 
-        floorPaths.push({ floor: currentFloor, path: pathToStair });
+        const pathWithExternal = externalPath.length > 0
+          ? [...externalPath, ...pathToStair]
+          : pathToStair;
 
-        // Se não é o último andar, criar transição
+        floorPaths.push({ floor: currentFloor, path: pathWithExternal });
+
         if (!isLastFloor) {
           const nextFloor = floorsInRoute[i + 1];
           const stairsNextFloor = await this.getStairs(structureId, nextFloor);
@@ -127,15 +140,13 @@ export class InternalRouteService {
           });
         }
       }
-      // Último andar: escada até o destino
       else if (isLastFloor) {
-        const entryPoint = stairTransitions[stairTransitions.length - 1].to;
-        const pathToDestination = await this.findShortestRoute(structureId, currentFloor, entryPoint, end);
+        const entryPointFloor = stairTransitions[stairTransitions.length - 1].to;
+        const pathToDestination = await this.findShortestRoute(structureId, currentFloor, entryPointFloor, end);
         if (!pathToDestination) return null;
 
         floorPaths.push({ floor: currentFloor, path: pathToDestination });
       }
-      // Andares intermediários: escada → escada
       else {
         const stairsCurrentFloor = await this.getStairs(structureId, currentFloor);
         const nextFloor = floorsInRoute[i + 1];
@@ -146,39 +157,31 @@ export class InternalRouteService {
           return null;
         }
 
-        // Ponto de entrada é a escada do andar anterior
-        const entryPoint = stairTransitions[stairTransitions.length - 1].to;
-        
-        // Se as escadas são no mesmo local (comum em prédios), 
-        // apenas registrar o ponto sem tentar calcular rota
-        const distance = haversine(entryPoint, stairsCurrentFloor[0]);
-        const isSameStairLocation = distance < 0.002; // Menos de 2 metros (~0.002 graus) = mesma escada
+        const entryPointFloor = stairTransitions[stairTransitions.length - 1].to;
+        const distance = haversine(entryPointFloor, stairsCurrentFloor[0]);
+        const isSameStairLocation = distance < 0.002;
         
         if (isSameStairLocation) {
-          // Escadas no mesmo lugar, apenas passar direto
-          floorPaths.push({ floor: currentFloor, path: [entryPoint] });
+          floorPaths.push({ floor: currentFloor, path: [entryPointFloor] });
           
-          // Transição para o próximo andar
-          const stairOnNextFloor = this.findNearestStair(stairsNextFloor, entryPoint);
+          const stairOnNextFloor = this.findNearestStair(stairsNextFloor, entryPointFloor);
           if (!stairOnNextFloor) return null;
 
           stairTransitions.push({
-            from: entryPoint,
+            from: entryPointFloor,
             to: stairOnNextFloor,
             fromFloor: currentFloor,
             toFloor: nextFloor
           });
         } else {
-          // Escadas em locais diferentes, calcular rota de travessia
-          const nextStair = this.findNearestStair(stairsCurrentFloor, entryPoint);
+          const nextStair = this.findNearestStair(stairsCurrentFloor, entryPointFloor);
           if (!nextStair) return null;
 
-          const pathAcrossFloor = await this.findShortestRoute(structureId, currentFloor, entryPoint, nextStair);
+          const pathAcrossFloor = await this.findShortestRoute(structureId, currentFloor, entryPointFloor, nextStair);
           if (!pathAcrossFloor) return null;
 
           floorPaths.push({ floor: currentFloor, path: pathAcrossFloor });
 
-          // Escada para o próximo andar
           const stairOnNextFloor = this.findNearestStair(stairsNextFloor, nextStair);
           if (!stairOnNextFloor) return null;
 
@@ -192,7 +195,6 @@ export class InternalRouteService {
       }
     }
 
-  
     const structureRepo = AppDataSource.getRepository(Structure);
     const roomRepo = AppDataSource.getRepository(Room);
     
@@ -202,16 +204,14 @@ export class InternalRouteService {
       select: ['id', 'name', 'floors', 'centroid', 'geometry']
     });
 
-    // Buscar rooms de todos os andares da rota
     const rooms = await roomRepo.find({
       where: {
         structure: { id: structureId },
         floor: In(floorsInRoute)
       },
-      select: ['id', 'name', 'floor', 'centroid', 'geometry'] // ✅ ADICIONADO: geometry
+      select: ['id', 'name', 'floor', 'centroid', 'geometry']
     });
 
-    // Agrupar rooms por andar
     const roomsByFloor: { [floor: number]: any[] } = {};
     for (const floor of floorsInRoute) {
       roomsByFloor[floor] = rooms.filter(r => r.floor === floor);
@@ -219,24 +219,22 @@ export class InternalRouteService {
 
     return {
       pathToStairs: floorPaths[0].path,
-      stairsTransition: stairTransitions[0], // Mantém compatibilidade com frontend atual
+      stairsTransition: stairTransitions[0],
       pathFromStairs: floorPaths[floorPaths.length - 1].path,
       destinationFloor: destFloor,
-      availableFloors: floorsInRoute, // Apenas os andares pelos quais a rota passa
-      floorPaths, // Array completo com todas as rotas por andar
-      stairTransitions, // Array completo com todas as transições de escada
-      structure, // ✅ NOVO: Informações da estrutura
-      roomsByFloor, // ✅ NOVO: Rooms organizados por andar
+      availableFloors: floorsInRoute,
+      floorPaths,
+      stairTransitions,
+      structure,
+      roomsByFloor,
     };
   }
 
-  /** Get all stairs nodes (as coordinates) for a given structure and floor */
   async getStairs(structureId: number, floor: number): Promise<number[][]> {
     const routes = await this.getRoutesByStructure(structureId, floor);
     const stairs: number[][] = [];
     for (const route of routes) {
       if (route.properties && route.properties.isStairs) {
-        // Use all coordinates in the MultiLineString as possible stair nodes
         const lines = route.geometry.coordinates;
         for (const line of lines) {
           for (const coord of line) {
@@ -248,7 +246,6 @@ export class InternalRouteService {
     return stairs;
   }
 
-  /** Find the stair node closest to a given point */
   findNearestStair(stairs: number[][], point: number[]): number[] | null {
     let minDist = Infinity;
     let nearest: number[] | null = null;
@@ -283,25 +280,21 @@ export class InternalRouteService {
     return findShortestInternalRoute(routes, start, end);
   }
 
-   async getDestinationCoords(roomId?: number, structureId?: number): Promise<number[] | null> {
+  async getDestinationCoords(roomId?: number, structureId?: number): Promise<number[] | null> {
     if (roomId) {
       const roomRepo = AppDataSource.getRepository(Room);
       const room = await roomRepo.findOne({ where: { id: Number(roomId) } });
-      console.log('getDestinationCoords - room:', room);
-      if (!room || !room.centroid) {
-        console.log('getDestinationCoords - room not found or centroid missing');
-        return null;
-      }
+      if (!room || !room.centroid) return null;
+      
       let centroid = room.centroid;
       if (typeof centroid === 'string') {
         try {
           centroid = JSON.parse(centroid);
         } catch (e) {
-          console.log('getDestinationCoords - centroid parse error:', centroid);
           return null;
         }
       }
-      console.log('getDestinationCoords - centroid:', centroid);
+      
       if (centroid.type === 'Point') {
         return centroid.coordinates;
       } else if (centroid.type === 'Polygon' && Array.isArray(centroid.coordinates)) {
@@ -309,26 +302,21 @@ export class InternalRouteService {
         const avg = poly.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]);
         return [avg[0]/poly.length, avg[1]/poly.length];
       }
-      console.log('getDestinationCoords - centroid type not handled:', centroid.type);
       return null;
     } else if (structureId) {
       const structureRepo = AppDataSource.getRepository(Structure);
       const structure = await structureRepo.findOne({ where: { id: Number(structureId) } });
-      console.log('getDestinationCoords - structure:', structure);
-      if (!structure || !structure.centroid) {
-        console.log('getDestinationCoords - structure not found or centroid missing');
-        return null;
-      }
+      if (!structure || !structure.centroid) return null;
+      
       let centroid = structure.centroid;
       if (typeof centroid === 'string') {
         try {
           centroid = JSON.parse(centroid);
         } catch (e) {
-          console.log('getDestinationCoords - structure centroid parse error:', centroid);
           return null;
         }
       }
-      console.log('getDestinationCoords - structure centroid:', centroid);
+      
       if (centroid.type === 'Point') {
         return centroid.coordinates;
       } else if (centroid.type === 'Polygon' && Array.isArray(centroid.coordinates)) {
@@ -336,10 +324,8 @@ export class InternalRouteService {
         const avg = poly.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]);
         return [avg[0]/poly.length, avg[1]/poly.length];
       }
-      console.log('getDestinationCoords - structure centroid type not handled:', centroid.type);
       return null;
     }
-    console.log('getDestinationCoords - no roomId or structureId');
     return null;
   }
 }

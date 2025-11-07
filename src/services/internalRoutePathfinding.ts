@@ -2,7 +2,7 @@ import { InternalRoute } from '../entities/InternalRoute';
 
 export function haversine(a: number[], b: number[]): number {
   const toRad = (deg: number) => deg * Math.PI / 180;
-  const R = 6371000;
+  const R = 6371000; // Earth radius in meters
   const dLat = toRad(b[1] - a[1]);
   const dLng = toRad(b[0] - a[0]);
   const lat1 = toRad(a[1]);
@@ -36,23 +36,30 @@ function dijkstra(graph: Record<string, Record<string, number>>, start: string, 
   const distances: Record<string, number> = {};
   const prev: Record<string, string|null> = {};
   const visited: Set<string> = new Set();
+  
   Object.keys(graph).forEach(node => {
     distances[node] = Infinity;
     prev[node] = null;
   });
+  
   distances[start] = 0;
+  
   while (visited.size < Object.keys(graph).length) {
     let minNode: string|null = null;
     let minDist = Infinity;
+    
     for (const node in distances) {
       if (!visited.has(node) && distances[node] < minDist) {
         minDist = distances[node];
         minNode = node;
       }
     }
+    
     if (minNode === null) break;
     visited.add(minNode);
+    
     if (minNode === end) break;
+    
     for (const neighbor in graph[minNode]) {
       const alt = distances[minNode] + graph[minNode][neighbor];
       if (alt < distances[neighbor]) {
@@ -61,39 +68,95 @@ function dijkstra(graph: Record<string, Record<string, number>>, start: string, 
       }
     }
   }
+  
   const path: string[] = [];
   let curr: string|null = end;
   while (curr) {
     path.unshift(curr);
     curr = prev[curr];
   }
+  
   return path[0] === start ? path : [];
 }
 
-function findNearestNode(graph: Record<string, Record<string, number>>, point: number[]): string {
+/**
+ * Finds the nearest node in the graph to a given point
+ * @param graph - The graph of route nodes
+ * @param point - The target point [lng, lat]
+ * @param maxTolerance - Maximum distance in meters to consider (default: 50m)
+ * @returns The key of the nearest node or null if none found within tolerance
+ */
+function findNearestNode(
+  graph: Record<string, Record<string, number>>, 
+  point: number[], 
+  maxTolerance: number = 50
+): string | null {
   let minDist = Infinity;
-  let nearest = null;
+  let nearest: string | null = null;
+  
+  
   for (const nodeKey of Object.keys(graph)) {
     const nodeCoords = nodeKey.split(',').map(Number);
     const dist = haversine(point, nodeCoords);
+    
     if (dist < minDist) {
       minDist = dist;
       nearest = nodeKey;
     }
   }
-  return nearest!;
+  
+  
+  if (minDist > maxTolerance) {
+    console.warn(`[findNearestNode] Nearest node is ${minDist.toFixed(2)}m away, exceeds tolerance of ${maxTolerance}m`);
+    return null;
+  }
+  
+  return nearest;
 }
 
-export function findShortestInternalRoute(routes: InternalRoute[], start: number[], end: number[]) {
+/**
+ * Finds the shortest route between start and end points using internal routes
+ * @param routes - Array of internal route segments
+ * @param start - Starting point [lng, lat]
+ * @param end - Ending point [lng, lat]
+ * @param tolerance - Maximum distance in meters to snap points to nearest route node (default: 50m)
+ * @returns Array of coordinates representing the path, or empty array if no path found
+ */
+export function findShortestInternalRoute(
+  routes: InternalRoute[], 
+  start: number[], 
+  end: number[],
+  tolerance: number = 10000
+): number[][] {
+  
   const graph = buildGraph(routes);
+
+  
+  
+  // Check if start/end points are exact  in the graph
   const startKey = Object.prototype.hasOwnProperty.call(graph, start.join(','))
     ? start.join(',')
-    : findNearestNode(graph, start);
+    : findNearestNode(graph, start, tolerance);
+    
   const endKey = Object.prototype.hasOwnProperty.call(graph, end.join(','))
     ? end.join(',')
-    : findNearestNode(graph, end);
+    : findNearestNode(graph, end, tolerance);
+
+  if (!startKey) {
+    return [];
+  }
+  
+  if (!endKey) {
+    return [];
+  }
+
 
   const path = dijkstra(graph, startKey, endKey);
+
+  if (path.length === 0) {
+    return [];
+  }
+
 
   return path.map(p => p.split(',').map(Number));
 }

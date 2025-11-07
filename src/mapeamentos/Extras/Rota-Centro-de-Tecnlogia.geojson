@@ -1,0 +1,12 @@
+{
+"type": "FeatureCollection",
+"name": "Rota-Centro-de-Tecnlogia",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944492749940885, -16.292844177698925 ], [ -48.944479409196695, -16.292774234317395 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 2, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944479409196695, -16.292774234317395 ], [ -48.944414583493455, -16.292436539137313 ], [ -48.944326563119205, -16.292453648564869 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 3, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944326563119205, -16.292453648564869 ], [ -48.944318969146835, -16.292406189267457 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 3, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944326563119205, -16.292453648564869 ], [ -48.944293555478858, -16.292460064600203 ], [ -48.944286267031984, -16.292414177095189 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 10, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 0 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944293555478858, -16.292460064600203 ], [ -48.944210250481795, -16.292476257451284 ], [ -48.944204990754656, -16.292454443311154 ], [ -48.944141224111121, -16.292465207110499 ] ] ] } }
+]
+}
