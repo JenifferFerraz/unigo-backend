@@ -1,6 +1,6 @@
 {
 "type": "FeatureCollection",
-"name": "Rota-H-2-Nova",
+"name": "Rota-H-2-Andar",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
 "features": [
 { "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 2 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.9436446, -16.2929919 ], [ -48.943629028429001, -16.292913696716752 ] ] ] } },
