@@ -16,12 +16,7 @@ import { Location, CourseLocation } from "../entities/Location";
 import { Room } from "../entities/Room";
 
 dotenv.config();
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
-console.log('POSTGRESQL_HOST:', process.env.POSTGRESQL_HOST);
-console.log('POSTGRESQL_PORT:', process.env.POSTGRESQL_PORT);
-console.log('POSTGRESQL_USERNAME:', process.env.POSTGRESQL_USERNAME);
-console.log('POSTGRESQL_PASSWORD:', process.env.POSTGRESQL_PASSWORD);
-console.log('POSTGRESQL_DATABASE:', process.env.POSTGRESQL_DATABASE);
+
 //** - Configuração do banco de dados
 export const AppDataSource = new DataSource(
     process.env.DATABASE_URL

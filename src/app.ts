@@ -9,7 +9,7 @@ import { locationRoutes } from './routes/location.routes';
 import { notificationRoutes } from './routes/notification.routes';
 import { examRoutes } from './routes/exam.routes';
 import { structureRoutes } from './routes/structure.routes';
-import { internalRouteRoutes } from './routes/internalRoute.routes';
+import { unifiedRoutes } from './routes/unified.routes';
 import { uploadRoutes } from './routes/upload.routes';
 import { scheduleRoutes } from './routes/schedule.routes';
 import { eventRoutes } from './routes/event.routes';
@@ -54,7 +54,7 @@ app.use('/locations', locationRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/exams', examRoutes);
 app.use('/structure', structureRoutes);
-app.use('/internal-route', internalRouteRoutes);
+app.use('/routes', unifiedRoutes);
 app.use('/room', roomRouter);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/schedules', scheduleRoutes);
@@ -62,7 +62,6 @@ app.use('/api/events', eventRoutes);
 app.use('/api/academic-calendar', academicCalendarRoutes);
 app.use('/api/feedback', feedbackRoutes);
 
-// Health check endpoint for connectivity and discovery validation
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
