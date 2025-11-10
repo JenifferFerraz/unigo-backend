@@ -12,7 +12,7 @@ async function runSeeders() {
             'user.seed.ts',
             'course-locations.seed.ts',
             'exams.seed.ts',
-            'seed-all.blocks.ts'
+            'seed-all-blocks.ts'
         ];
 
         for (const seeder of seeders) {
