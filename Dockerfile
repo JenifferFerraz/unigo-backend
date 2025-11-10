@@ -29,7 +29,9 @@ RUN npm install --legacy-peer-deps && \
     npm install wrappy once --save && \
     npm install
 
-# Copia o restante do código da aplicação
+
+# Garante que a pasta de mapeamentos e todos os arquivos sejam copiados
+COPY --chown=node:node src/mapeamentos/ src/mapeamentos/
 COPY --chown=node:node . .
 
 EXPOSE 3000
