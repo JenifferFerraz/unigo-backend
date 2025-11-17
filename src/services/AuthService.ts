@@ -9,14 +9,23 @@ import * as nodemailer from 'nodemailer';
 class AuthService {
     //** - Repositório de usuários */
     private static userRepository = AppDataSource.getRepository(User);
-    private static transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+    
+    //** - Cria o transporter de email apenas se as credenciais estiverem configuradas */
+    private static getTransporter() {
+
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.error('SMTP credentials are not configured');
+            return null;
         }
-    });
+        
+        return nodemailer.createTransport({
+            service: process.env.SMTP_SERVICE,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+    }
     //** - Valida os dados de login */
 
     public static validateLogin(req: Request): void {
@@ -96,6 +105,17 @@ class AuthService {
         const { password, refreshToken, ...userData } = user;
         return userData;
     }
+
+//** - Retorna o usuário pelo email */
+    public static async getUserByEmail(email: string): Promise<User | null> {
+        if (!email) {
+            throw new Error('Email is required');
+        }
+        return await this.userRepository.findOne({
+            where: { email }
+        });
+    }
+    
     //** - Valida os dados para redefinição de senha */
     public static validatePasswordReset(req: Request): void {
         if (!req.body.email) {
@@ -109,12 +129,12 @@ class AuthService {
         });
 
         if (!user) {
-            throw new Error('If a user with this email exists, they will receive password reset instructions');
+            throw new Error('Se um usuário com este email existir, ele receberá instruções de redefinição de senha');
         }
 
         const resetToken = sign(
             { email },
-            process.env.RESET_TOKEN_SECRET || 'default_reset_secret',
+            process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
@@ -122,18 +142,35 @@ class AuthService {
         await this.userRepository.save(user);
 
         const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-        await this.transporter.sendMail({
-            from: process.env.SMTP_FROM,
-            to: email,
-            subject: 'Password Reset Request',
-            html: `
-                <h1>Password Reset Request</h1>
-                <p>Click the link below to reset your password:</p>
-                <a href="${resetLink}">Reset Password</a>
-                <p>This link will expire in 1 hour.</p>
-            `
-        });
+        
+        const transporter = this.getTransporter();
+        if (transporter) {
+            try {
+                await transporter.sendMail({
+                    from: process.env.SMTP_USER,
+                    to: email,
+                    subject: 'Pedido de Redefinição de Senha',
+                    html: `
+                        <h1>Pedido de Redefinição de Senha</h1>
+                        <p>Clique no link abaixo para redefinir sua senha:</p>
+                        <a href="${resetLink}">Redefinir Senha</a>
+                        <p>Este link expirará em 1 hora. Se você não fez este pedido, ignore este email.</p>
+                    `
+                });
+            } catch (emailError: any) {
+                // Loga o erro mas não quebra a requisição
+                console.error('Erro ao enviar email de redefinição de senha:', emailError.message);
+                // Em desenvolvimento, pode ser útil logar o link de reset
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Link de reset (desenvolvimento):', resetLink);
+                }
+            }
+        } else {
+            console.warn('SMTP não configurado. Email de redefinição de senha não será enviado.');
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Link de reset (desenvolvimento):', resetLink);
+            }
+        }
     }
 //** - Completa o processo de redefinição de senha */
     public static async resetPassword(token: string, newPassword: string): Promise<void> {
