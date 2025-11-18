@@ -3,6 +3,7 @@ import { InternalRoute } from '../entities/InternalRoute';
 import { Structure } from '../entities/Structure';
 const fs = require('fs');
 const path = require('path');
+
 function readGeoJsonIfExists(filePath) {
     return fs.existsSync(filePath)
         ? JSON.parse(fs.readFileSync(filePath, 'utf8'))
@@ -17,7 +18,6 @@ const extras = [
     'Estrutura-Quadra.geojson',
     'Estrutura-Extra-1.geojson',
     'Estrutura-Extra-2.geojson',
-    // Adicione outros arquivos extras conforme necessário
 ];
 
 async function seedAllBlocks() {
@@ -26,8 +26,6 @@ async function seedAllBlocks() {
         const structureRepo = AppDataSource.getRepository(Structure);
         const routeRepo = AppDataSource.getRepository(InternalRoute);
         const roomRepo = AppDataSource.getRepository(require('../entities/Room').Room);
-
-
 
         const blocos = [
             { nome: 'A', pasta: 'Bloco-A' },
@@ -42,6 +40,7 @@ async function seedAllBlocks() {
             { nome: 'I', pasta: 'Bloco-I' },
             { nome: 'J', pasta: 'Bloco-J' },
         ];
+
         for (let blocoObj of blocos) {
             const bloco = blocoObj.nome;
             const pasta = blocoObj.pasta;
@@ -56,6 +55,7 @@ async function seedAllBlocks() {
             const estruturaPath2 = path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-Estrutura.geojson`);
             const estruturaPath3 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-ESTRUTURA.geojson`);
             const estruturaPath4 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-Estrutura.geojson`);
+            
             if (fs.existsSync(estruturaPath1)) estruturaFile = estruturaPath1;
             else if (fs.existsSync(estruturaPath2)) estruturaFile = estruturaPath2;
             else if (fs.existsSync(estruturaPath3)) estruturaFile = estruturaPath3;
@@ -72,6 +72,7 @@ async function seedAllBlocks() {
             // Busca ou cria a estrutura correta para o bloco
             let estrutura = await structureRepo.findOne({ where: { name: nomeEstrutura } });
             let estruturaId = null;
+            
             if (!estrutura && estruturaFeature) {
                 let poly = estruturaFeature.geometry;
                 let centroid = [0, 0];
@@ -94,12 +95,13 @@ async function seedAllBlocks() {
                 estruturaId = estrutura.id;
             }
 
-            // Adiciona escadas entre B2 e C do andar 0 ao 3 (mantém lógica original)
+            // Adiciona escadas entre B2 e C do andar 0 ao 3
             if (bloco === 'B2' || bloco === 'C') {
                 const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
                 const escadasGeojson = readGeoJsonIfExists(escadasPath);
                 const estruturaB2 = await structureRepo.findOne({ where: { name: 'BLOCO B2' } });
                 const estruturaC = await structureRepo.findOne({ where: { name: 'BLOCO C' } });
+                
                 for (let andar = 0; andar <= 3; andar++) {
                     for (const feature of escadasGeojson.features) {
                         const nome = (feature.properties?.name || '').toUpperCase();
@@ -129,13 +131,14 @@ async function seedAllBlocks() {
                 }
             }
 
+            // Loop pelos andares
             for (let andar = 0; andar <= 5; andar++) {
                 let roomsGeojson = { features: [] };
                 let rotasGeojson = { features: [] };
-                // Novo padrão simplificado
                 let roomFile = null;
+
+                // Busca arquivo de rooms
                 if (andar === 0) {
-                    // Tenta todos os padrões possíveis para térreo
                     const filesTerreo = [
                         path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-TERREO.geojson`),
                         path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TERREO.geojson`),
@@ -150,7 +153,6 @@ async function seedAllBlocks() {
                         }
                     }
                 } else {
-                    // Tenta todos os padrões possíveis para andares
                     const filesAndar = [
                         path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-${andar}-Andar.geojson`),
                         path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-${andar}-ANDAR.geojson`),
@@ -166,16 +168,19 @@ async function seedAllBlocks() {
                         }
                     }
                 }
+
                 if (roomFile && fs.existsSync(roomFile)) {
                     roomsGeojson = readGeoJsonIfExists(roomFile);
                 } else {
                     roomsGeojson = { features: [] };
                 }
+
+                // Busca arquivo de rotas
                 const rotaPatterns = [
-                    `../mapeamentos/Bloco-${bloco}/Rota-${bloco}-${andar === 0 ? 'TERREO' : andar + '-ANDAR'}.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/Rota-${bloco}-${andar}-Andar.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/Rota-${bloco}-${andar === 0 ? 'Terreo' : andar + '-Andar'}.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/Rota-${bloco}-${andar === 0 ? 'TÉRREO' : andar + '° ANDAR'}.geojson`,
+                    `../mapeamentos/${pasta}/Rota-${bloco}-${andar === 0 ? 'TERREO' : andar + '-ANDAR'}.geojson`,
+                    `../mapeamentos/${pasta}/Rota-${bloco}-${andar}-Andar.geojson`,
+                    `../mapeamentos/${pasta}/Rota-${bloco}-${andar === 0 ? 'Terreo' : andar + '-Andar'}.geojson`,
+                    `../mapeamentos/${pasta}/Rota-${bloco}-${andar === 0 ? 'TÉRREO' : andar + '° ANDAR'}.geojson`,
                 ];
                 for (const p of rotaPatterns) {
                     const abs = path.join(__dirname, p);
@@ -184,14 +189,16 @@ async function seedAllBlocks() {
                         if (rotasGeojson.features.length > 0) break;
                     }
                 }
-                if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
+
+                // Se não há rotas nem rooms, pula este andar
                 if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
 
-
+                // Cria estrutura caso não exista (fallback)
                 if (!estruturaId) {
                     let poly = roomsGeojson.features[0]?.geometry;
                     let centroid = [0, 0];
                     let validGeometry = false;
+                    
                     if (poly && poly.type === 'Polygon' && Array.isArray(poly.coordinates[0])) {
                         const coords = poly.coordinates[0];
                         centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
@@ -200,6 +207,7 @@ async function seedAllBlocks() {
                         centroid = poly.coordinates;
                         validGeometry = true;
                     }
+                    
                     if (validGeometry) {
                         estrutura = structureRepo.create({
                             name: `BLOCO ${bloco}`,
@@ -215,22 +223,56 @@ async function seedAllBlocks() {
                     }
                 }
 
-
+                // Adiciona o andar à estrutura
                 if (estrutura && Array.isArray(estrutura.floors) && !estrutura.floors.includes(andar)) {
                     estrutura.floors.push(andar);
                     await structureRepo.save(estrutura);
                 }
 
+                // 🔥 CORREÇÃO PRINCIPAL: Agrupa features por nome e prioriza Polygon
+                console.log(`\n📦 Processando Bloco ${bloco}, Andar ${andar}`);
+                console.log(`   Total de features no GeoJSON: ${roomsGeojson.features.length}`);
+
+                const featuresByName = new Map<string, any>();
 
                 for (const feature of roomsGeojson.features) {
-                    let roomName = feature?.properties?.name || 'SEM NOME';
-                    // Corrige erro: sempre converte para string antes de trim/toUpperCase
-                    const roomNameStr = String(roomName || '').trim().toUpperCase();
-                    if (!roomNameStr || roomNameStr === 'SEM NOME' || roomNameStr === 'BURACO') {
-                        console.log(`[ROOM SKIP] Ignorado: ${roomName}, Bloco: ${bloco}, Andar: ${andar}`);
+                    const roomName = String(feature?.properties?.name || '').trim().toUpperCase();
+                    
+                    if (!roomName || roomName === 'SEM NOME' || roomName === 'BURACO') {
+                        console.log(`   [SKIP] Ignorado: ${feature?.properties?.name || 'sem nome'}`);
                         continue;
                     }
+
+                    const geometryType = feature.geometry?.type;
+                    
+                    // Se não tem feature com esse nome ainda, adiciona
+                    if (!featuresByName.has(roomName)) {
+                        featuresByName.set(roomName, feature);
+                        console.log(`   [ADD] ${roomName} (${geometryType})`);
+                        continue;
+                    }
+
+                    // Se já tem, verifica prioridade
+                    const existingFeature = featuresByName.get(roomName);
+                    const existingType = existingFeature.geometry?.type;
+
+                    // Prioridade: Polygon > Point
+                    if (geometryType === 'Polygon' && existingType === 'Point') {
+                        console.log(`   [UPGRADE] ${roomName}: Point → Polygon`);
+                        featuresByName.set(roomName, feature);
+                    } else if (geometryType === 'Point' && existingType === 'Polygon') {
+                        console.log(`   [KEEP] ${roomName}: mantendo Polygon, ignorando Point`);
+                    } else {
+                        console.log(`   [DUP] ${roomName}: ambos ${existingType}, mantendo primeiro`);
+                    }
+                }
+
+                console.log(`   ✅ Features únicas após deduplicação: ${featuresByName.size}\n`);
+
+                // Processa as rooms únicas
+                for (const [roomName, feature] of featuresByName.entries()) {
                     let centroidGeo = null;
+                    
                     if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
                         const coords = feature.geometry.coordinates[0];
                         const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
@@ -238,7 +280,17 @@ async function seedAllBlocks() {
                     } else if (feature.geometry && feature.geometry.type === 'Point') {
                         centroidGeo = { type: 'Point', coordinates: feature.geometry.coordinates };
                     }
-                    console.log(`[ROOM SEED] Bloco: ${bloco}, Andar: ${andar}, Room: ${roomName}, EstruturaId: ${estruturaId}`);
+
+                    if (!feature.geometry) {
+                        console.error(`   ❌ ${roomName} sem geometria!`);
+                        continue;
+                    }
+
+                    if (!centroidGeo) {
+                        console.error(`   ❌ ${roomName} sem centroid!`);
+                        continue;
+                    }
+
                     try {
                         const existingRoom = await roomRepo.findOne({
                             where: {
@@ -247,10 +299,11 @@ async function seedAllBlocks() {
                                 floor: andar
                             }
                         });
+
                         if (!existingRoom) {
                             await AppDataSource.query(
                                 `INSERT INTO room (name, description, geometry, centroid, "structureId", floor)
-    VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3),4326), ST_SetSRID(ST_GeomFromGeoJSON($4),4326), $5, $6)`,
+                                 VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3),4326), ST_SetSRID(ST_GeomFromGeoJSON($4),4326), $5, $6)`,
                                 [
                                     roomName,
                                     `Sala interna andar ${andar === 0 ? 'térreo' : andar + 'º andar'} BLOCO ${bloco}`,
@@ -260,31 +313,41 @@ async function seedAllBlocks() {
                                     andar
                                 ]
                             );
-
-                            if (!feature.geometry) {
-                                console.error(`❌ [SEED] Room ${roomName} sem geometria!`);
-                                continue;
-                            }
-
-                            if (!centroidGeo) {
-                                console.error(`❌ [SEED] Room ${roomName} sem centroid!`);
-                                continue;
-                            }
-
+                            console.log(`   ✅ Criado: ${roomName} (${feature.geometry.type})`);
                         } else {
-                            console.log(`[ROOM SKIP] Room já existe: ${roomName}, Bloco: ${bloco}, Andar: ${andar}`);
+                            // Verifica se precisa atualizar de Point para Polygon
+                            const existingGeometry = existingRoom.geometry;
+                            const existingType = existingGeometry?.type;
+                            const newType = feature.geometry.type;
+
+                            if (newType === 'Polygon' && existingType === 'Point') {
+                                console.log(`   🔄 Atualizando ${roomName}: Point → Polygon`);
+                                await AppDataSource.query(
+                                    `UPDATE room 
+                                     SET geometry = ST_SetSRID(ST_GeomFromGeoJSON($1),4326),
+                                         centroid = ST_SetSRID(ST_GeomFromGeoJSON($2),4326)
+                                     WHERE id = $3`,
+                                    [
+                                        JSON.stringify(feature.geometry),
+                                        JSON.stringify(centroidGeo),
+                                        existingRoom.id
+                                    ]
+                                );
+                            } else {
+                                console.log(`   ⏭️  Já existe: ${roomName} (${existingType})`);
+                            }
                         }
                     } catch (err) {
-                        console.error(`[ROOM ERROR] Bloco: ${bloco}, Andar: ${andar}, Room: ${roomName}, Erro:`, err);
+                        console.error(`   ❌ Erro ao processar ${roomName}:`, err);
                     }
                 }
 
-
+                // Processa rotas
                 for (const feature of rotasGeojson.features) {
                     const isStairs = feature.properties.isStairs === true ||
                         (feature.properties.name && feature.properties.name.toUpperCase().includes('ESCADA'));
                     const properties = { ...feature.properties, isStairs };
-                    // Verifica se já existe rota igual (mesmo estrutura, andar e geometria)
+                    
                     const existingRoute = await routeRepo.findOne({
                         where: {
                             structure: { id: estruturaId },
@@ -292,6 +355,7 @@ async function seedAllBlocks() {
                             geometry: feature.geometry
                         }
                     });
+                    
                     if (!existingRoute) {
                         const route = routeRepo.create({
                             structure: { id: estruturaId },
@@ -300,25 +364,26 @@ async function seedAllBlocks() {
                             properties,
                         });
                         await routeRepo.save(route);
-                    } else {
-                        console.log(`[ROUTE SKIP] Rota já existe para estrutura ${estruturaId}, andar ${andar}`);
                     }
                 }
             }
         }
 
-
+        // Processa estruturas extras
         for (let extraFile of extras) {
             const extraPath = path.join(__dirname, '../mapeamentos/', extraFile);
             const extraGeojson = readGeoJsonIfExists(extraPath);
+            
             for (const feature of extraGeojson.features) {
                 let estrutura = await structureRepo.findOne({ where: { name: feature.properties?.name } });
+                
                 if (!estrutura) {
                     let centroid = [0, 0];
                     if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
                         const coords = feature.geometry.coordinates[0];
                         centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
                     }
+                    
                     estrutura = structureRepo.create({
                         name: feature.properties?.name || 'EXTRA',
                         description: 'Estrutura extra',
@@ -340,10 +405,10 @@ async function seedAllBlocks() {
 
 seedAllBlocks()
     .then(() => {
-        console.log('Seed de todos os blocos concluído!');
+        console.log('✅ Seed de todos os blocos concluído!');
         process.exit(0);
     })
     .catch(err => {
-        console.error('Erro ao rodar seed de todos os blocos:', err);
+        console.error('❌ Erro ao rodar seed de todos os blocos:', err);
         process.exit(1);
     });
