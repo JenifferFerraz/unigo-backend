@@ -66,17 +66,14 @@ async function seedAllBlocks() {
                     nomeEstrutura = estruturaFeature.properties.name;
                 }
 
-                    // Adiciona escadas entre B2 e C do andar 0 ao 3
                         const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
                         const escadasGeojson = readGeoJsonIfExists(escadasPath);
-                        // Busca estruturas B2 e C
                         const estruturaB2 = await structureRepo.findOne({ where: { name: 'BLOCO B2' } });
                         const estruturaC = await structureRepo.findOne({ where: { name: 'BLOCO C' } });
                         for (let andar = 0; andar <= 3; andar++) {
                             for (const feature of escadasGeojson.features) {
                                 const nome = (feature.properties?.name || '').toUpperCase();
                                 if (nome.includes('ESCADA')) {
-                                    // Cria Room para B2
                                     if (estruturaB2) {
                                         const roomB2 = roomRepo.create({
                                             name: nome,
@@ -87,7 +84,6 @@ async function seedAllBlocks() {
                                         });
                                         await roomRepo.save(roomB2);
                                     }
-                                    // Cria Room para C
                                     if (estruturaC) {
                                         const roomC = roomRepo.create({
                                             name: nome,
