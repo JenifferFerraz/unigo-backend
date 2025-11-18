@@ -1,8 +1,1 @@
-{
-"type": "FeatureCollection",
-"name": "GINÁSIO POLIESPORTIVO",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-"features": [
-{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "Point", "coordinates": [ -48.944850415863911, -16.29343081983556 ] } }
-]
-}
+{"type":"FeatureCollection","features":[{"geometry":{"coordinates":[[[-48.9447555,-16.2941823],[-48.9444889,-16.2929897],[-48.9451034,-16.2928651],[-48.9453694,-16.2940554],[-48.9447555,-16.2941823]]],"crs":{"properties":{"name":"EPSG:4326"},"type":"name"},"type":"Polygon"},"properties":{"name":"GINÁSIO POLIESPORTIVO","felt:color":"#000000","felt:hasLongDescription":false,"felt:id":"9BtBbJSzmSdy242E9CReSVhC","felt:locked":false,"felt:ordering":1762134478408984,"felt:parentId":"Lp9AB9BdiKRyqtE4q09AmLVRD","felt:radiusDisplayAngle":90,"felt:type":"Polygon","felt:widthScale":1},"type":"Feature"},{"geometry":{"coordinates":[-48.9449401,-16.2934644],"crs":{"properties":{"name":"EPSG:4326"},"type":"name"},"type":"Point"},"properties":{"name":"GINÁSIO POLIESPORTIVO","felt:color":"#C93535","felt:frame":"none","felt:id":"YOmSa9C48SraFtE9A4YW8BaD","felt:locked":false,"felt:ordering":1762526729156832,"felt:parentId":"Lp9AB9BdiKRyqtE4q09AmLVRD","felt:symbol":"dot","felt:type":"Place"},"type":"Feature"}]}

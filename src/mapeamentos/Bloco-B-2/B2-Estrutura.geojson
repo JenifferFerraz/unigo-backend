@@ -1,0 +1,24 @@
+{
+	"type": "FeatureCollection",
+	"features": [
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "B2 ESTRUTURA",
+				"felt:type": "Polygon"
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[-48.9437792, -16.2953509],
+						[-48.9437364, -16.2951659],
+						[-48.9442162, -16.2950619],
+						[-48.9442608, -16.295248],
+						[-48.9437792, -16.2953509]
+					]
+				]
+			}
+		}
+	]
+}
