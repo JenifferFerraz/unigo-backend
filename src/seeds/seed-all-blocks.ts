@@ -27,14 +27,14 @@ async function seedAllBlocks() {
         const routeRepo = AppDataSource.getRepository(InternalRoute);
         const roomRepo = AppDataSource.getRepository(require('../entities/Room').Room);
 
-        
-        
+
+
         const blocos = [
-             { nome: 'A', pasta: 'Bloco-A' },
-             { nome: 'B1', pasta: 'Bloco-B-1' },
+            { nome: 'A', pasta: 'Bloco-A' },
+            { nome: 'B1', pasta: 'Bloco-B-1' },
             { nome: 'B2', pasta: 'Bloco-B-2' },
             { nome: 'C', pasta: 'Bloco-C' },
-             { nome: 'D', pasta: 'Bloco-D' },
+            { nome: 'D', pasta: 'Bloco-D' },
             { nome: 'E', pasta: 'Bloco-E' },
             { nome: 'F', pasta: 'Bloco-F' },
             { nome: 'G', pasta: 'Bloco-G' },
@@ -74,10 +74,10 @@ async function seedAllBlocks() {
             let estruturaId = null;
             if (!estrutura && estruturaFeature) {
                 let poly = estruturaFeature.geometry;
-                let centroid = [0,0];
+                let centroid = [0, 0];
                 if (poly && poly.type === 'Polygon' && Array.isArray(poly.coordinates[0])) {
                     const coords = poly.coordinates[0];
-                    centroid = coords.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]).map(x => x/coords.length);
+                    centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
                     estrutura = structureRepo.create({
                         name: nomeEstrutura,
                         description: `Estrutura do ${nomeEstrutura}`,
@@ -187,14 +187,14 @@ async function seedAllBlocks() {
                 if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
                 if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
 
-                
+
                 if (!estruturaId) {
                     let poly = roomsGeojson.features[0]?.geometry;
-                    let centroid = [0,0];
+                    let centroid = [0, 0];
                     let validGeometry = false;
                     if (poly && poly.type === 'Polygon' && Array.isArray(poly.coordinates[0])) {
                         const coords = poly.coordinates[0];
-                        centroid = coords.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]).map(x => x/coords.length);
+                        centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
                         validGeometry = true;
                     } else if (poly && poly.type === 'Point' && Array.isArray(poly.coordinates)) {
                         centroid = poly.coordinates;
@@ -215,13 +215,13 @@ async function seedAllBlocks() {
                     }
                 }
 
-                
+
                 if (estrutura && Array.isArray(estrutura.floors) && !estrutura.floors.includes(andar)) {
                     estrutura.floors.push(andar);
                     await structureRepo.save(estrutura);
                 }
 
-                
+
                 for (const feature of roomsGeojson.features) {
                     let roomName = feature?.properties?.name || 'SEM NOME';
                     // Corrige erro: sempre converte para string antes de trim/toUpperCase
@@ -233,7 +233,7 @@ async function seedAllBlocks() {
                     let centroidGeo = null;
                     if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
                         const coords = feature.geometry.coordinates[0];
-                        const centroid = coords.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]).map(x => x/coords.length);
+                        const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
                         centroidGeo = { type: 'Point', coordinates: centroid };
                     } else if (feature.geometry && feature.geometry.type === 'Point') {
                         centroidGeo = { type: 'Point', coordinates: feature.geometry.coordinates };
@@ -250,7 +250,7 @@ async function seedAllBlocks() {
                         if (!existingRoom) {
                             await AppDataSource.query(
                                 `INSERT INTO room (name, description, geometry, centroid, "structureId", floor)
-                                VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3),4326), ST_SetSRID(ST_GeomFromGeoJSON($4),4326), $5, $6)`,
+    VALUES ($1, $2, ST_SetSRID(ST_GeomFromGeoJSON($3),4326), ST_SetSRID(ST_GeomFromGeoJSON($4),4326), $5, $6)`,
                                 [
                                     roomName,
                                     `Sala interna andar ${andar === 0 ? 'térreo' : andar + 'º andar'} BLOCO ${bloco}`,
@@ -260,6 +260,17 @@ async function seedAllBlocks() {
                                     andar
                                 ]
                             );
+
+                            if (!feature.geometry) {
+                                console.error(`❌ [SEED] Room ${roomName} sem geometria!`);
+                                continue;
+                            }
+
+                            if (!centroidGeo) {
+                                console.error(`❌ [SEED] Room ${roomName} sem centroid!`);
+                                continue;
+                            }
+
                         } else {
                             console.log(`[ROOM SKIP] Room já existe: ${roomName}, Bloco: ${bloco}, Andar: ${andar}`);
                         }
@@ -268,7 +279,7 @@ async function seedAllBlocks() {
                     }
                 }
 
-                
+
                 for (const feature of rotasGeojson.features) {
                     const isStairs = feature.properties.isStairs === true ||
                         (feature.properties.name && feature.properties.name.toUpperCase().includes('ESCADA'));
@@ -296,17 +307,17 @@ async function seedAllBlocks() {
             }
         }
 
-        
+
         for (let extraFile of extras) {
             const extraPath = path.join(__dirname, '../mapeamentos/', extraFile);
             const extraGeojson = readGeoJsonIfExists(extraPath);
             for (const feature of extraGeojson.features) {
                 let estrutura = await structureRepo.findOne({ where: { name: feature.properties?.name } });
                 if (!estrutura) {
-                    let centroid = [0,0];
+                    let centroid = [0, 0];
                     if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
                         const coords = feature.geometry.coordinates[0];
-                        centroid = coords.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]).map(x => x/coords.length);
+                        centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
                     }
                     estrutura = structureRepo.create({
                         name: feature.properties?.name || 'EXTRA',

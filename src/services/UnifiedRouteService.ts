@@ -78,7 +78,7 @@ export class UnifiedRouteService {
     let nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
 
     if (!nearestDoor) {
-      console.warn('⚠️ [Step 2] Nenhuma entrada principal encontrada, buscando porta secundária...');
+      console.warn('⚠️ Nenhuma entrada principal encontrada, buscando porta secundária...');
       nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, false);
     }
 
@@ -91,11 +91,8 @@ export class UnifiedRouteService {
     const entryFloor = nearestDoor.floor;
     const isMainEntrance = nearestDoor.isMainEntrance;
 
- 
-
     const externalDistance = haversine(userPosition, entryPoint);
 
-    // 🔥 SEMPRE calcular rota externa até a entrada selecionada
     const externalPath = await this.calculateExternalRoute(
       userPosition,
       entryPoint,
@@ -168,8 +165,8 @@ export class UnifiedRouteService {
     estimatedTime = estimatedTime / 60;
 
     const structure = await this.structureRepo.findOne({
-      where: { id: structureId },
-      select: ['id', 'name', 'floors', 'centroid', 'geometry']
+      where: { id: structureId }
+  
     });
 
     const allFloorsSet = new Set<number>([entryFloor, destinationFloor, ...floorsTraversed]);
@@ -186,12 +183,22 @@ export class UnifiedRouteService {
 
     const allFloors = Array.from(allFloorsSet).sort((a, b) => a - b);
 
-    const rooms = await this.roomRepo.find({
-      where: {
-        structure: { id: structureId },
-        floor: In(allFloors)
-      },
-      select: ['id', 'name', 'floor', 'centroid', 'geometry']
+    // ✅ CORREÇÃO PRINCIPAL: Remover select e usar query builder
+    console.log('🔍 Buscando rooms para andares:', allFloors);
+    
+    const rooms = await this.roomRepo
+      .createQueryBuilder('room')
+      .where('room.structureId = :structureId', { structureId })
+      .andWhere('room.floor IN (:...floors)', { floors: allFloors })
+      .getMany();
+
+    console.log(`✅ Total de rooms encontradas: ${rooms.length}`);
+    
+    // Log para debug - ver quais rooms têm geometria
+    rooms.forEach(room => {
+      const hasGeometry = room.geometry ? '✅' : '❌';
+      const hasCentroid = room.centroid ? '✅' : '❌';
+      console.log(`   Room: ${room.name}, Andar: ${room.floor}, Geo: ${hasGeometry}, Centroid: ${hasCentroid}`);
     });
 
     const roomsByFloor: { [floor: number]: any[] } = {};
@@ -226,6 +233,7 @@ export class UnifiedRouteService {
       roomsByFloor
     };
   }
+
 
   private async findNearestStructureDoor(
     structureId: number,
