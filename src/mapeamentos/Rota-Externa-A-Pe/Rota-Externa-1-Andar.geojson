@@ -1,0 +1,18 @@
+{
+"type": "FeatureCollection",
+"name": "Rota-Externa-1-Andar",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.94512050229249, -16.294877986969212 ], [ -48.944919535763361, -16.294920248290989 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 2, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944919535763361, -16.294920248290989 ], [ -48.944815572058616, -16.294941059492448 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 4, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.943978347033863, -16.295594557205394 ], [ -48.944057978431758, -16.295576047797937 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 6, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944057978431758, -16.295576047797937 ], [ -48.944372179439419, -16.295500680295813 ], [ -48.944227313328376, -16.294987491543196 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 6, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944227313328376, -16.294987491543196 ], [ -48.944064743058959, -16.295028918448946 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 9, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944227313328376, -16.294987491543196 ], [ -48.944215611990984, -16.294941080476825 ], [ -48.944100217823753, -16.294972443963925 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 10, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944215611990984, -16.294941080476825 ], [ -48.944169678530621, -16.294769113089714 ], [ -48.944161652676677, -16.294771281727265 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 15, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944169678530621, -16.294769113089714 ], [ -48.944113030509648, -16.294543172991354 ], [ -48.944090446995574, -16.294547468263882 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 18, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944113030509648, -16.294543172991354 ], [ -48.944091940585587, -16.294459951080263 ], [ -48.944070850100132, -16.29446619879398 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 65464, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944091940585587, -16.294459951080263 ], [ -48.944053458438638, -16.294333210925508 ], [ -48.944043441937161, -16.294335936979767 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 45254, "isBathroom": false, "isStairs": true, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944053458438638, -16.294333210925508 ], [ -48.944114583371721, -16.294320630228363 ] ] ] } }
+]
+}

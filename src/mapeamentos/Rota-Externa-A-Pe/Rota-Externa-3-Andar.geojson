@@ -1,0 +1,14 @@
+{
+"type": "FeatureCollection",
+"name": "Rota-Externa-3-Andar",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944039259625733, -16.294969050878777 ], [ -48.944240630942922, -16.294923878394961 ], [ -48.944249613321695, -16.294956301631899 ], [ -48.944258410239833, -16.29499121753037 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 2, "isBathroom": false, "isStairs": true, "isDoor": false, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944258410239833, -16.29499121753037 ], [ -48.944259315634397, -16.294994726456945 ], [ -48.944108055569082, -16.295027701688483 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 5, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944259315634397, -16.294994726456945 ], [ -48.944292580901887, -16.295144031854157 ], [ -48.944262758599855, -16.295148994194676 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 10, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944292580901887, -16.295144031854157 ], [ -48.944346072922812, -16.295391075791066 ], [ -48.944314304658633, -16.295397408394109 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 12, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944346072922812, -16.295391075791066 ], [ -48.944362020412377, -16.295477139748886 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 20, "isBathroom": false, "isStairs": false, "isDoor": true, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944240630942922, -16.294923878394961 ], [ -48.944205355054081, -16.294760782473954 ], [ -48.944185137140572, -16.294765639191521 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 20, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 3 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944205355054081, -16.294760782473954 ], [ -48.944186566781028, -16.294673316585623 ] ] ] } }
+]
+}

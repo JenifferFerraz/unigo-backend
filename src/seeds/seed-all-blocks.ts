@@ -27,57 +27,80 @@ async function seedAllBlocks() {
         const routeRepo = AppDataSource.getRepository(InternalRoute);
         const roomRepo = AppDataSource.getRepository(require('../entities/Room').Room);
 
-        // Blocos de A até J
-        // Mapeamento de blocos que compartilham estrutura
-        // Mapeamento de blocos que compartilham arquivo de geometria
-        // Mapeamento de blocos para arquivo de estrutura (pode estar em outra pasta)
-        const estruturaCompartilhada: { [bloco: string]: { estruturaPath: string } } = {
-            'B1': { estruturaPath: '../mapeamentos/Bloco-B-2/B1-B2-Estrutura.geojson' },
-            'B2': { estruturaPath: '../mapeamentos/Bloco-B-2/B1-B2-Estrutura.geojson' },
-            'B':  { estruturaPath: '../mapeamentos/Bloco-C/B-2-C-Estrutura.geojson' },
-            'C':  { estruturaPath: '../mapeamentos/Bloco-C/B-2-C-Estrutura.geojson' },
-            // Adicione outros blocos compartilhados aqui se necessário
-        };
-        // Lista de blocos conforme as pastas
+        
+        
         const blocos = [
-            // { nome: 'A', pasta: 'Bloco-A' },
-            // { nome: 'B1', pasta: 'Bloco-B-1' },
-            // { nome: 'B2', pasta: 'Bloco-B-2' },
-            // { nome: 'C', pasta: 'Bloco-C' },
-            // { nome: 'D', pasta: 'Bloco-D' },
-            // { nome: 'E', pasta: 'Bloco-E' },
+             { nome: 'A', pasta: 'Bloco-A' },
+             { nome: 'B1', pasta: 'Bloco-B-1' },
+            { nome: 'B2', pasta: 'Bloco-B-2' },
+            { nome: 'C', pasta: 'Bloco-C' },
+             { nome: 'D', pasta: 'Bloco-D' },
+            { nome: 'E', pasta: 'Bloco-E' },
             { nome: 'F', pasta: 'Bloco-F' },
-            // { nome: 'G', pasta: 'Bloco-G' },
+            { nome: 'G', pasta: 'Bloco-G' },
             { nome: 'H', pasta: 'Bloco-H' },
-            // { nome: 'I', pasta: 'Bloco-I' },
+            { nome: 'I', pasta: 'Bloco-I' },
             { nome: 'J', pasta: 'Bloco-J' },
         ];
         for (let blocoObj of blocos) {
             const bloco = blocoObj.nome;
             const pasta = blocoObj.pasta;
-            // Procurar arquivo de estrutura do bloco (pode estar em outra pasta)
+
             let estruturaFile = null;
             let estruturaGeo = null;
             let estruturaFeature = null;
             let nomeEstrutura = `BLOCO ${bloco}`;
-            // Adiciona busca por arquivo com hífen para Bloco J
+
+            // Busca apenas o arquivo de estrutura específico do bloco
             const estruturaPath1 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco} ESTRUTURA.geojson`);
             const estruturaPath2 = path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-Estrutura.geojson`);
             const estruturaPath3 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-ESTRUTURA.geojson`);
-            if (estruturaCompartilhada[bloco]) {
-                estruturaFile = path.join(__dirname, estruturaCompartilhada[bloco].estruturaPath);
-            } else {
-                if (fs.existsSync(estruturaPath1)) estruturaFile = estruturaPath1;
-                else if (fs.existsSync(estruturaPath2)) estruturaFile = estruturaPath2;
-                else if (fs.existsSync(estruturaPath3)) estruturaFile = estruturaPath3;
-            }
+            if (fs.existsSync(estruturaPath1)) estruturaFile = estruturaPath1;
+            else if (fs.existsSync(estruturaPath2)) estruturaFile = estruturaPath2;
+            else if (fs.existsSync(estruturaPath3)) estruturaFile = estruturaPath3;
             if (estruturaFile && fs.existsSync(estruturaFile)) {
                 estruturaGeo = readGeoJsonIfExists(estruturaFile);
                 estruturaFeature = estruturaGeo && estruturaGeo.features && estruturaGeo.features[0] ? estruturaGeo.features[0] : null;
-                // Se o arquivo de estrutura tem propriedade 'name', usa esse nome
+                
                 if (estruturaFeature?.properties?.name) {
                     nomeEstrutura = estruturaFeature.properties.name;
                 }
+
+                    // Adiciona escadas entre B2 e C do andar 0 ao 3
+                        const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
+                        const escadasGeojson = readGeoJsonIfExists(escadasPath);
+                        // Busca estruturas B2 e C
+                        const estruturaB2 = await structureRepo.findOne({ where: { name: 'BLOCO B2' } });
+                        const estruturaC = await structureRepo.findOne({ where: { name: 'BLOCO C' } });
+                        for (let andar = 0; andar <= 3; andar++) {
+                            for (const feature of escadasGeojson.features) {
+                                const nome = (feature.properties?.name || '').toUpperCase();
+                                if (nome.includes('ESCADA')) {
+                                    // Cria Room para B2
+                                    if (estruturaB2) {
+                                        const roomB2 = roomRepo.create({
+                                            name: nome,
+                                            description: 'Escada entre B2 e C',
+                                            structure: estruturaB2,
+                                            floor: andar,
+                                            geometry: feature.geometry,
+                                        });
+                                        await roomRepo.save(roomB2);
+                                    }
+                                    // Cria Room para C
+                                    if (estruturaC) {
+                                        const roomC = roomRepo.create({
+                                            name: nome,
+                                            description: 'Escada entre B2 e C',
+                                            structure: estruturaC,
+                                            floor: andar,
+                                            geometry: feature.geometry,
+                                        });
+                                        await roomRepo.save(roomC);
+                                    }
+                                }
+                            }
+                        }
             }
             let estrutura = await structureRepo.findOne({ where: { name: nomeEstrutura } });
             let estruturaId = null;
@@ -113,20 +136,43 @@ async function seedAllBlocks() {
             for (let andar = 0; andar <= 5; andar++) {
                 let roomsGeojson = { features: [] };
                 let rotasGeojson = { features: [] };
-                // Padrão genérico para todos os blocos (sem forçar B1/B2)
-                const roomPatterns = [
-                    `../mapeamentos/Bloco-${bloco}/Bloco-${bloco}-${andar === 0 ? 'TERREO' : andar + '-ANDAR'}.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/${bloco}-${andar === 0 ? 'Terreo' : andar + '-Andar'}.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/${bloco} ${andar === 0 ? 'TÉRREO' : andar + '° ANDAR'}.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/${bloco}-${andar}-Andar.geojson`,
-                    `../mapeamentos/Bloco-${bloco}/${bloco}-${andar === 0 ? 'TERREO' : andar + '-ANDAR'}.geojson`,
-                ];
-                for (const p of roomPatterns) {
-                    const abs = path.join(__dirname, p);
-                    if (fs.existsSync(abs)) {
-                        roomsGeojson = readGeoJsonIfExists(abs);
-                        if (roomsGeojson.features.length > 0) break;
+                // Novo padrão simplificado
+                let roomFile = null;
+                if (andar === 0) {
+                    // Tenta todos os padrões possíveis para térreo
+                    const filesTerreo = [
+                        path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-TERREO.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TERREO.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-Terreo.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TÉRREO.geojson`)
+                    ];
+                    for (const f of filesTerreo) {
+                        if (fs.existsSync(f)) {
+                            roomFile = f;
+                            break;
+                        }
                     }
+                } else {
+                    // Tenta todos os padrões possíveis para andares
+                    const filesAndar = [
+                        path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-${andar}-Andar.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-${andar}-ANDAR.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-${andar}-Andar.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-${andar}-ANDAR.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-${andar}-Andar.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-${andar}-ANDAR.geojson`)
+                    ];
+                    for (const f of filesAndar) {
+                        if (fs.existsSync(f)) {
+                            roomFile = f;
+                            break;
+                        }
+                    }
+                }
+                if (roomFile && fs.existsSync(roomFile)) {
+                    roomsGeojson = readGeoJsonIfExists(roomFile);
+                } else {
+                    roomsGeojson = { features: [] };
                 }
                 const rotaPatterns = [
                     `../mapeamentos/Bloco-${bloco}/Rota-${bloco}-${andar === 0 ? 'TERREO' : andar + '-ANDAR'}.geojson`,
@@ -144,7 +190,7 @@ async function seedAllBlocks() {
                 if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
                 if (rotasGeojson.features.length === 0 && roomsGeojson.features.length === 0) continue;
 
-                // Se não criou estrutura ainda (não tinha arquivo de estrutura), cria usando sala
+                
                 if (!estruturaId) {
                     let poly = roomsGeojson.features[0]?.geometry;
                     let centroid = [0,0];
@@ -172,15 +218,21 @@ async function seedAllBlocks() {
                     }
                 }
 
-                // Atualiza floors da estrutura
+                
                 if (estrutura && Array.isArray(estrutura.floors) && !estrutura.floors.includes(andar)) {
                     estrutura.floors.push(andar);
                     await structureRepo.save(estrutura);
                 }
 
-                // Salvar rooms
+                
                 for (const feature of roomsGeojson.features) {
                     let roomName = feature?.properties?.name || 'SEM NOME';
+                    // Corrige erro: sempre converte para string antes de trim/toUpperCase
+                    const roomNameStr = String(roomName || '').trim().toUpperCase();
+                    if (!roomNameStr || roomNameStr === 'SEM NOME' || roomNameStr === 'BURACO') {
+                        console.log(`[ROOM SKIP] Ignorado: ${roomName}, Bloco: ${bloco}, Andar: ${andar}`);
+                        continue;
+                    }
                     let centroidGeo = null;
                     if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
                         const coords = feature.geometry.coordinates[0];
@@ -219,7 +271,7 @@ async function seedAllBlocks() {
                     }
                 }
 
-                // Salvar rotas
+                
                 for (const feature of rotasGeojson.features) {
                     const isStairs = feature.properties.isStairs === true ||
                         (feature.properties.name && feature.properties.name.toUpperCase().includes('ESCADA'));
@@ -247,7 +299,7 @@ async function seedAllBlocks() {
             }
         }
 
-        // Extras (estruturas externas)
+        
         for (let extraFile of extras) {
             const extraPath = path.join(__dirname, '../mapeamentos/', extraFile);
             const extraGeojson = readGeoJsonIfExists(extraPath);
