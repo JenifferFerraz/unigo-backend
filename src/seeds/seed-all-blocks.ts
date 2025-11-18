@@ -55,65 +55,29 @@ async function seedAllBlocks() {
             const estruturaPath1 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco} ESTRUTURA.geojson`);
             const estruturaPath2 = path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-Estrutura.geojson`);
             const estruturaPath3 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-ESTRUTURA.geojson`);
+            const estruturaPath4 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-Estrutura.geojson`);
             if (fs.existsSync(estruturaPath1)) estruturaFile = estruturaPath1;
             else if (fs.existsSync(estruturaPath2)) estruturaFile = estruturaPath2;
             else if (fs.existsSync(estruturaPath3)) estruturaFile = estruturaPath3;
+            else if (fs.existsSync(estruturaPath4)) estruturaFile = estruturaPath4;
+
             if (estruturaFile && fs.existsSync(estruturaFile)) {
                 estruturaGeo = readGeoJsonIfExists(estruturaFile);
                 estruturaFeature = estruturaGeo && estruturaGeo.features && estruturaGeo.features[0] ? estruturaGeo.features[0] : null;
                 nomeEstrutura = estruturaFeature?.properties?.name || `BLOCO ${bloco}`;
-
-                    // Adiciona escadas entre B2 e C do andar 0 ao 3
-                        const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
-                        const escadasGeojson = readGeoJsonIfExists(escadasPath);
-                        // Busca estruturas B2 e C
-                        const estruturaB2 = await structureRepo.findOne({ where: { name: 'BLOCO B2' } });
-                        const estruturaC = await structureRepo.findOne({ where: { name: 'BLOCO C' } });
-                        for (let andar = 0; andar <= 3; andar++) {
-                            for (const feature of escadasGeojson.features) {
-                                const nome = (feature.properties?.name || '').toUpperCase();
-                                if (nome.includes('ESCADA')) {
-                                    // Cria Room para B2
-                                    if (estruturaB2) {
-                                        const roomB2 = roomRepo.create({
-                                            name: nome,
-                                            description: 'Escada entre B2 e C',
-                                            structure: estruturaB2,
-                                            floor: andar,
-                                            geometry: feature.geometry,
-                                        });
-                                        await roomRepo.save(roomB2);
-                                    }
-                                    // Cria Room para C
-                                    if (estruturaC) {
-                                        const roomC = roomRepo.create({
-                                            name: nome,
-                                            description: 'Escada entre B2 e C',
-                                            structure: estruturaC,
-                                            floor: andar,
-                                            geometry: feature.geometry,
-                                        });
-                                        await roomRepo.save(roomC);
-                                    }
-                                }
-                            }
-                        }
+            } else {
+                nomeEstrutura = `BLOCO ${bloco}`;
             }
+
+            // Busca ou cria a estrutura correta para o bloco
             let estrutura = await structureRepo.findOne({ where: { name: nomeEstrutura } });
             let estruturaId = null;
             if (!estrutura && estruturaFeature) {
                 let poly = estruturaFeature.geometry;
                 let centroid = [0,0];
-                let validGeometry = false;
                 if (poly && poly.type === 'Polygon' && Array.isArray(poly.coordinates[0])) {
                     const coords = poly.coordinates[0];
                     centroid = coords.reduce((acc, cur) => [acc[0]+cur[0], acc[1]+cur[1]], [0,0]).map(x => x/coords.length);
-                    validGeometry = true;
-                } else if (poly && poly.type === 'Point' && Array.isArray(poly.coordinates)) {
-                    centroid = poly.coordinates;
-                    validGeometry = true;
-                }
-                if (validGeometry) {
                     estrutura = structureRepo.create({
                         name: nomeEstrutura,
                         description: `Estrutura do ${nomeEstrutura}`,
@@ -128,6 +92,41 @@ async function seedAllBlocks() {
                 }
             } else if (estrutura) {
                 estruturaId = estrutura.id;
+            }
+
+            // Adiciona escadas entre B2 e C do andar 0 ao 3 (mantém lógica original)
+            if (bloco === 'B2' || bloco === 'C') {
+                const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
+                const escadasGeojson = readGeoJsonIfExists(escadasPath);
+                const estruturaB2 = await structureRepo.findOne({ where: { name: 'BLOCO B2' } });
+                const estruturaC = await structureRepo.findOne({ where: { name: 'BLOCO C' } });
+                for (let andar = 0; andar <= 3; andar++) {
+                    for (const feature of escadasGeojson.features) {
+                        const nome = (feature.properties?.name || '').toUpperCase();
+                        if (nome.includes('ESCADA')) {
+                            if (estruturaB2 && bloco === 'B2') {
+                                const roomB2 = roomRepo.create({
+                                    name: nome,
+                                    description: 'Escada entre B2 e C',
+                                    structure: estruturaB2,
+                                    floor: andar,
+                                    geometry: feature.geometry,
+                                });
+                                await roomRepo.save(roomB2);
+                            }
+                            if (estruturaC && bloco === 'C') {
+                                const roomC = roomRepo.create({
+                                    name: nome,
+                                    description: 'Escada entre B2 e C',
+                                    structure: estruturaC,
+                                    floor: andar,
+                                    geometry: feature.geometry,
+                                });
+                                await roomRepo.save(roomC);
+                            }
+                        }
+                    }
+                }
             }
 
             for (let andar = 0; andar <= 5; andar++) {
