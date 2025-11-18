@@ -140,7 +140,8 @@ async function seedAllBlocks() {
                         path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-TERREO.geojson`),
                         path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TERREO.geojson`),
                         path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-Terreo.geojson`),
-                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TÉRREO.geojson`)
+                        path.join(__dirname, `../mapeamentos/${pasta}/${bloco}-TÉRREO.geojson`),
+                        path.join(__dirname, `../mapeamentos/${pasta}/Bloco-${bloco}-Terreo.geojson`),
                     ];
                     for (const f of filesTerreo) {
                         if (fs.existsSync(f)) {
