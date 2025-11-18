@@ -49,7 +49,7 @@ async function seedAllBlocks() {
             let estruturaFile = null;
             let estruturaGeo = null;
             let estruturaFeature = null;
-            let nomeEstrutura = `BLOCO ${bloco}`;
+            let nomeEstrutura = null;
 
             // Busca apenas o arquivo de estrutura específico do bloco
             const estruturaPath1 = path.join(__dirname, `../mapeamentos/${pasta}/${bloco} ESTRUTURA.geojson`);
@@ -61,10 +61,7 @@ async function seedAllBlocks() {
             if (estruturaFile && fs.existsSync(estruturaFile)) {
                 estruturaGeo = readGeoJsonIfExists(estruturaFile);
                 estruturaFeature = estruturaGeo && estruturaGeo.features && estruturaGeo.features[0] ? estruturaGeo.features[0] : null;
-                
-                if (estruturaFeature?.properties?.name) {
-                    nomeEstrutura = estruturaFeature.properties.name;
-                }
+                nomeEstrutura = estruturaFeature?.properties?.name || `BLOCO ${bloco}`;
 
                     // Adiciona escadas entre B2 e C do andar 0 ao 3
                         const escadasPath = path.join(__dirname, '../mapeamentos/Extras/escadas.geojson');
