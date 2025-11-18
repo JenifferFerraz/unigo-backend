@@ -89,7 +89,7 @@ describe('UserService', () => {
         }
       };
 
-      expect(() => UserService.validateCreateUser(mockReq as any)).toThrow('Student profile is required for student role');
+      expect(() => UserService.validateCreateUser(mockReq as any)).toThrow('Student profile is required for student role and studentId is required');
     });
 
     it('should throw error for missing student profile fields', () => {
@@ -107,7 +107,7 @@ describe('UserService', () => {
         }
       };
 
-      expect(() => UserService.validateCreateUser(mockReq as any)).toThrow('Missing required field in studentProfile: studentId');
+      expect(() => UserService.validateCreateUser(mockReq as any)).toThrow('Student profile is required for student role and studentId is required');
     });
   });
 

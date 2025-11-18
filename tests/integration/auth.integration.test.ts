@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import request from 'supertest';
 import { AppDataSource } from '../../src/config/data-source';
 import app from '../../src/app.test';
@@ -147,35 +148,66 @@ describe('Auth Integration Tests', () => {
     });
   });
 
-  describe('POST /auth/request-password-reset', () => {
+  describe('POST /auth/forgot-password', () => {
     it('should request password reset successfully', async () => {
-      // Mock AuthService.requestPasswordReset
+      // Mock AuthService methods
       jest.doMock('../../src/services/AuthService', () => ({
         validatePasswordReset: jest.fn(),
-        requestPasswordReset: jest.fn().mockResolvedValue(undefined)
+        requestPasswordReset: jest.fn().mockResolvedValue(undefined),
+        getUserByEmail: jest.fn().mockResolvedValue({
+          id: 1,
+          email: 'test@example.com',
+          password: 'hashed-password'
+        })
       }));
 
       const response = await request(app)
-        .post('/auth/request-password-reset')
+        .post('/auth/forgot-password')
         .send({ email: 'test@example.com' })
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('password reset instructions');
+      expect(response.body.message).toContain('verifique sua caixa de entrada');
     });
 
-    it('should return 400 for invalid email', async () => {
-      // Mock AuthService.requestPasswordReset to throw error
+    it('should return 400 when email is missing', async () => {
+      const response = await request(app)
+        .post('/auth/forgot-password')
+        .send({})
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Email is required');
+    });
+
+    it('should return 400 for invalid email format', async () => {
       jest.doMock('../../src/services/AuthService', () => ({
         validatePasswordReset: jest.fn().mockImplementation(() => {
-          throw new Error('Invalid email format');
+          throw new Error('Email is required');
         }),
         requestPasswordReset: jest.fn()
       }));
 
       const response = await request(app)
-        .post('/auth/request-password-reset')
-        .send({ email: 'invalid-email' })
+        .post('/auth/forgot-password')
+        .send({ email: '' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return success even if user does not exist (security)', async () => {
+      jest.doMock('../../src/services/AuthService', () => ({
+        validatePasswordReset: jest.fn(),
+        requestPasswordReset: jest.fn().mockRejectedValue(
+          new Error('Se um usuário com este email existir, ele receberá instruções de redefinição de senha')
+        ),
+        getUserByEmail: jest.fn().mockResolvedValue(null)
+      }));
+
+      const response = await request(app)
+        .post('/auth/forgot-password')
+        .send({ email: 'nonexistent@example.com' })
         .expect(400);
 
       expect(response.body).toHaveProperty('message');
@@ -183,7 +215,7 @@ describe('Auth Integration Tests', () => {
   });
 
   describe('POST /auth/reset-password', () => {
-    it('should reset password successfully', async () => {
+    it('should reset password successfully with valid token', async () => {
       const resetData = {
         token: 'valid-reset-token',
         newPassword: 'newpassword123'
@@ -200,16 +232,55 @@ describe('Auth Integration Tests', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('successfully reset');
+      expect(response.body.message).toBe('Password successfully reset');
     });
 
-    it('should return 400 for missing token or password', async () => {
+    it('should return 400 when token is missing', async () => {
       const response = await request(app)
         .post('/auth/reset-password')
-        .send({ token: 'valid-token' }) // Missing newPassword
+        .send({ newPassword: 'newpassword123' })
         .expect(400);
 
       expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Token and new password are required');
+    });
+
+    it('should return 400 when newPassword is missing', async () => {
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({ token: 'valid-token' })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Token and new password are required');
+    });
+
+    it('should return 400 when both token and password are missing', async () => {
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({})
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid or expired token', async () => {
+      jest.doMock('../../src/services/AuthService', () => ({
+        resetPassword: jest.fn().mockRejectedValue(
+          new Error('Invalid or expired reset token')
+        )
+      }));
+
+      const response = await request(app)
+        .post('/auth/reset-password')
+        .send({
+          token: 'invalid-token',
+          newPassword: 'newpassword123'
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Invalid or expired reset token');
     });
   });
 

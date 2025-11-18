@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import FeedbackService from '../services/FeedbackService';
+import { spawn } from 'child_process';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 class FeedbackController {
   /**
@@ -134,6 +137,78 @@ class FeedbackController {
     } catch (error: any) {
       return res.status(500).json({
         message: error.message || 'Erro ao exportar feedbacks',
+      });
+    }
+  }
+
+  /**
+   * Exportar estatísticas de feedback para CSV usando script Python (apenas admin)
+   */
+  async exportStatsCsv(req: Request, res: Response) {
+    try {
+      const { startDate, endDate } = req.query;
+
+      // Buscar estatísticas
+      const stats = await FeedbackService.getStatistics({
+        startDate: startDate as string | undefined,
+        endDate: endDate as string | undefined,
+      });
+
+      // Caminho para o script Python
+      const scriptPath = join(__dirname, '../scripts/convert_csv.py');
+      
+      // Tentar usar Python do venv se existir, senão usar Python do sistema
+      let pythonCommand: string;
+      const venvPythonPath = process.platform === 'win32' 
+        ? join(__dirname, '../scripts/venv/Scripts/python.exe')
+        : join(__dirname, '../scripts/venv/bin/python3');
+      
+      if (existsSync(venvPythonPath)) {
+        pythonCommand = venvPythonPath;
+      } else {
+        pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+      }
+      
+      // Executar script Python passando JSON via stdin
+      const pythonProcess = spawn(pythonCommand, [scriptPath], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: process.cwd(),
+      });
+
+      let csvOutput = '';
+      let errorOutput = '';
+
+      // Enviar dados JSON para o script
+      pythonProcess.stdin.write(JSON.stringify(stats));
+      pythonProcess.stdin.end();
+
+      // Coletar saída CSV
+      pythonProcess.stdout.on('data', (data) => {
+        csvOutput += data.toString();
+      });
+
+      // Coletar erros
+      pythonProcess.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        pythonProcess.on('close', (code) => {
+          if (code !== 0) {
+            reject(new Error(`Script Python falhou com código ${code}: ${errorOutput}`));
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename=feedback_stats.csv');
+
+      return res.status(200).send(csvOutput);
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message || 'Erro ao exportar estatísticas',
       });
     }
   }
