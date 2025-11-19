@@ -46,7 +46,7 @@ export class UnifiedRouteService {
   private roomRepo = AppDataSource.getRepository(Room);
   private structureRepo = AppDataSource.getRepository(Structure);
 
-  async calculateCompleteRoute(
+    async calculateCompleteRoute(
     userPosition: number[],
     destinationRoomId: number,
     mode: RouteMode = 'walking'
@@ -183,7 +183,6 @@ export class UnifiedRouteService {
 
     const allFloors = Array.from(allFloorsSet).sort((a, b) => a - b);
 
-    // ✅ CORREÇÃO PRINCIPAL: Remover select e usar query builder
     console.log('🔍 Buscando rooms para andares:', allFloors);
     
     const rooms = await this.roomRepo
@@ -194,7 +193,6 @@ export class UnifiedRouteService {
 
     console.log(`✅ Total de rooms encontradas: ${rooms.length}`);
     
-    // Log para debug - ver quais rooms têm geometria
     rooms.forEach(room => {
       const hasGeometry = room.geometry ? '✅' : '❌';
       const hasCentroid = room.centroid ? '✅' : '❌';
@@ -232,6 +230,68 @@ export class UnifiedRouteService {
       structure: structureWithFilteredFloors,
       roomsByFloor
     };
+  }
+
+  /**
+   * ✨ NOVO: Retorna informações da estrutura sem calcular rota
+   * Útil quando o usuário quer apenas visualizar o prédio
+   */
+  async getStructureInfo(destinationRoomId: number): Promise<{
+    structure: any;
+    roomsByFloor: { [floor: number]: any[] };
+    destinationRoom: any;
+    floors: number[];
+  } | null> {
+    try {
+      console.log('🏢 Buscando informações da estrutura para sala:', destinationRoomId);
+
+      const destinationRoom = await this.roomRepo.findOne({
+        where: { id: destinationRoomId },
+        relations: ['structure']
+      });
+
+      if (!destinationRoom) {
+        console.error('❌ Sala não encontrada');
+        return null;
+      }
+
+      const structureId = destinationRoom.structure.id;
+
+      // Buscar todos os andares da estrutura
+      const allRooms = await this.roomRepo
+        .createQueryBuilder('room')
+        .where('room.structureId = :structureId', { structureId })
+        .getMany();
+
+      const floors = Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b);
+
+      console.log(`✅ Estrutura encontrada com ${floors.length} andares e ${allRooms.length} salas`);
+
+      const roomsByFloor: { [floor: number]: any[] } = {};
+      for (const floor of floors) {
+        roomsByFloor[floor] = allRooms.filter(r => r.floor === floor);
+      }
+
+      const structure = await this.structureRepo.findOne({
+        where: { id: structureId }
+      });
+
+      const structureWithFloors = structure ? {
+        ...structure,
+        floors
+      } : structure;
+
+      return {
+        structure: structureWithFloors,
+        roomsByFloor,
+        destinationRoom,
+        floors
+      };
+
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar informações da estrutura:', error);
+      return null;
+    }
   }
 
 

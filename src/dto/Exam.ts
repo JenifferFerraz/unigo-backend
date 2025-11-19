@@ -1,3 +1,5 @@
+import { Course } from "@entities/Course";
+
 export interface ExamRow {
   disciplina: string;
   professor: string;
@@ -8,4 +10,5 @@ export interface ExamRow {
   curso?: string;
   turno?: string;
   ciclo?: number;
+  course?: Course;
 }

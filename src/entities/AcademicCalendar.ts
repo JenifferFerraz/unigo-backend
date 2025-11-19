@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Course } from './Course';
 
 @Entity('academic_calendar')
 export class AcademicCalendar {
@@ -9,7 +10,7 @@ export class AcademicCalendar {
   title!: string;
 
   @Column({ type: 'date' })
-  date!: Date; 
+  date!: Date;
 
   @Column({
     type: 'enum',
@@ -19,13 +20,13 @@ export class AcademicCalendar {
   type!: string;
 
   @Column({ type: 'text', nullable: true })
-  description?: string; 
+  description?: string;
 
   @Column({ type: 'int', nullable: true })
-  semester?: number; 
+  semester?: number;
 
   @Column({ type: 'int', nullable: true })
-  year?: number; 
+  year?: number;
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
@@ -35,4 +36,10 @@ export class AcademicCalendar {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column({ length: 100, nullable: true })
+  feature?: string;
+
+  @ManyToOne(() => Course, { nullable: true })
+  course?: Course;
 }

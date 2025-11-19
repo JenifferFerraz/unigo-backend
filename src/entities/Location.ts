@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { Course } from "./Course";
 
-// Tipos de locais no campus
 export enum LocationType {
     BLOCK = 'block',
     BUILDING = 'building',

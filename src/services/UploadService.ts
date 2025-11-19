@@ -8,6 +8,7 @@ import { ScheduleRow, UploadResult } from '../dto/Schedule';
 import { EventRow } from '../dto/Event';
 import { CalendarRow } from '../dto/AcademicCalendar';
 import { ExamRow } from '../dto/Exam';
+import { link } from 'fs';
 
 class UploadService {
   /**
@@ -39,12 +40,22 @@ class UploadService {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i] as ScheduleRow;
-      const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e índice começa em 0
+      const rowNumber = i + 2; 
 
       try {
         // Validações
         if (!row.disciplina || !row.professor || !row.horario || !row.sala || !row.dia_semana) {
           throw new Error('Campos obrigatórios faltando: disciplina, professor, horario, sala, dia_semana');
+        }
+
+        // Buscar o curso pelo nome
+        let courseEntity = undefined;
+        if (row.curso) {
+          const courseRepository = AppDataSource.getRepository('Course');
+          courseEntity = await courseRepository.findOne({ where: { name: row.curso } });
+          if (!courseEntity) {
+            throw new Error(`Curso não encontrado: ${row.curso}`);
+          }
         }
 
         // Inserir no banco de dados
@@ -55,7 +66,7 @@ class UploadService {
           time: row.horario,
           room: row.sala,
           dayOfWeek: row.dia_semana,
-          course: row.curso,
+          course: courseEntity,
           shift: row.turno,
           semester: row.semestre || 1,
         });
@@ -107,16 +118,31 @@ class UploadService {
           throw new Error('Formato de data inválido para data_inicio');
         }
 
+        // Buscar o curso pelo nome
+        let courseEntity = undefined;
+        if (row.nome_curso) {
+          const courseRepository = AppDataSource.getRepository('Course');
+          courseEntity = await courseRepository.findOne({ where: { name: row.nome_curso } });
+          console.log('[processEventsFile] courseEntity:', courseEntity);
+          if (!courseEntity) {
+            throw new Error(`Curso não encontrado: ${row.nome_curso}`);
+          }
+        }
+
         // Inserir no banco de dados
         const eventRepository = AppDataSource.getRepository(Event);
-        await eventRepository.save({
+        const eventData = {
           title: row.titulo,
           description: row.descricao,
           startDate: new Date(row.data_inicio),
           endDate: row.data_fim ? new Date(row.data_fim) : undefined,
           location: row.local,
           type: row.tipo || 'academico',
-        });
+          course: courseEntity,
+          link: row.link
+        };
+        console.log('[processEventsFile] eventData:', eventData);
+        await eventRepository.save(eventData);
 
         result.successCount++;
       } catch (error: any) {
@@ -263,10 +289,10 @@ class UploadService {
     const templatesDir = path.join(__dirname, '../../templates');
     
     const templateMap: Record<string, string> = {
-      schedule: 'template_horarios.xlsx',
-      events: 'template_eventos.xlsx',
-      calendar: 'template_calendario.xlsx',
-      exams: 'template_provas.xlsx',
+      schedule: 'planilha_modelo_horarios.xlsx',
+      events: 'planilha_modelo_eventos.xlsx',
+      calendar: 'planilha_modelo_calendario.xlsx',
+      exams: 'planilha_modelo_provas.xlsx',
     };
 
     const filename = templateMap[type];
@@ -274,7 +300,9 @@ class UploadService {
       throw new Error('Template não encontrado.');
     }
 
-    return path.join(templatesDir, filename);
+    const fullPath = path.join(templatesDir, filename);
+    console.log('[UploadService] Template path:', fullPath);
+    return fullPath;
   }
 }
 

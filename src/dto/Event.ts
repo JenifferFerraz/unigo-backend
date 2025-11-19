@@ -5,4 +5,6 @@ export interface EventRow {
   data_fim?: Date;
   local?: string;
   tipo?: string;
+  nome_curso?: string; 
+  link?: string;
 }
