@@ -18,7 +18,7 @@ export class Exam {
     @Column({ length: 50 })
     time!: string;
 
-    @Column({ length: 20, nullable: true })
+    @Column({ length: 100, nullable: true })
     grade?: string;
     
     @Column({ length: 20, nullable: true })

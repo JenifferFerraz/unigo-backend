@@ -42,3 +42,8 @@ postgres_data/
 Thumbs.db
 
 pgdata/
+
+venv
+
+.venv
+

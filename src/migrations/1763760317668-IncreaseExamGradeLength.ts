@@ -1,0 +1,128 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class IncreaseExamGradeLength1763760317668 implements MigrationInterface {
+    name = 'IncreaseExamGradeLength1763760317668'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "FK_student_profiles_users"`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "FK_student_profiles_courses"`);
+        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "FK_users_courses"`);
+        await queryRunner.query(`ALTER TABLE "exam" DROP CONSTRAINT "FK_e6b0d68b26f7847f2d46810df8f"`);
+        await queryRunner.query(`ALTER TABLE "schedules" DROP CONSTRAINT "FK_e00a5ee3b179da2f408ced6e952"`);
+        await queryRunner.query(`ALTER TABLE "events" DROP CONSTRAINT "FK_ca3a0b98f5039238922f9407e1a"`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" DROP CONSTRAINT "FK_67037536b72be1f94194d4f5460"`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" DROP CONSTRAINT "FK_4334f6be2d7d841a9d5205a100e"`);
+        await queryRunner.query(`ALTER TABLE "room" DROP CONSTRAINT "FK_room_structure"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_schedules_day_of_week"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_schedules_course"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_schedules_shift"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_events_start_date"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_events_type"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_events_is_active"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_academic_calendar_date"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_academic_calendar_type"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_academic_calendar_year_semester"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_academic_calendar_is_active"`);
+        await queryRunner.query(`DROP INDEX "public"."idx_feedbacks_vinculo"`);
+        await queryRunner.query(`DROP INDEX "public"."idx_feedbacks_is_anonymous"`);
+        await queryRunner.query(`DROP INDEX "public"."idx_feedbacks_created_at"`);
+        await queryRunner.query(`ALTER TABLE "schedules" DROP COLUMN "course"`);
+        await queryRunner.query(`ALTER TABLE "events" DROP COLUMN "type"`);
+        await queryRunner.query(`DROP TYPE "public"."events_type_enum"`);
+        await queryRunner.query(`ALTER TABLE "schedules" ADD "courseName" character varying(100)`);
+        await queryRunner.query(`ALTER TABLE "schedules" ADD "feature" character varying(100)`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" ADD "feature" character varying(100)`);
+        await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "createdAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "updatedAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "UQ_student_profiles_studentId"`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "UQ_aaf8d9e0e5ee595daec766880ad" UNIQUE ("courseId")`);
+        await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "createdAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "updatedAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" ALTER COLUMN "created_at" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP CONSTRAINT "UQ_1c65ef243169e51b514c814eeae"`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "description"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "description" character varying`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "nearbyLandmarks"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "nearbyLandmarks" character varying`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "accessibilityNotes"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "accessibilityNotes" character varying`);
+        await queryRunner.query(`ALTER TABLE "locations" ALTER COLUMN "createdAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "locations" ALTER COLUMN "updatedAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "course_locations" ALTER COLUMN "createdAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "course_locations" ALTER COLUMN "updatedAt" SET DEFAULT now()`);
+        await queryRunner.query(`ALTER TABLE "room" ALTER COLUMN "geometry" TYPE geometry(Geometry,4326)`);
+        await queryRunner.query(`ALTER TABLE "room" ALTER COLUMN "centroid" TYPE geometry(Geometry,4326)`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "FK_064d129936a1e821d637ee8c88e" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "FK_aaf8d9e0e5ee595daec766880ad" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_3148e7834f4910fcc0ffa9ac9ed" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "exam" ADD CONSTRAINT "FK_e6b0d68b26f7847f2d46810df8f" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "internal_route" ADD CONSTRAINT "FK_95f0cbc535d457a7532b6e38d8f" FOREIGN KEY ("structureId") REFERENCES "structure"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "schedules" ADD CONSTRAINT "FK_e00a5ee3b179da2f408ced6e952" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "events" ADD CONSTRAINT "FK_ca3a0b98f5039238922f9407e1a" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" ADD CONSTRAINT "FK_67037536b72be1f94194d4f5460" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" ADD CONSTRAINT "FK_4334f6be2d7d841a9d5205a100e" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "room" ADD CONSTRAINT "FK_14665e8dc6aac1987f35a8acebf" FOREIGN KEY ("structureId") REFERENCES "structure"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "room" DROP CONSTRAINT "FK_14665e8dc6aac1987f35a8acebf"`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" DROP CONSTRAINT "FK_4334f6be2d7d841a9d5205a100e"`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" DROP CONSTRAINT "FK_67037536b72be1f94194d4f5460"`);
+        await queryRunner.query(`ALTER TABLE "events" DROP CONSTRAINT "FK_ca3a0b98f5039238922f9407e1a"`);
+        await queryRunner.query(`ALTER TABLE "schedules" DROP CONSTRAINT "FK_e00a5ee3b179da2f408ced6e952"`);
+        await queryRunner.query(`ALTER TABLE "internal_route" DROP CONSTRAINT "FK_95f0cbc535d457a7532b6e38d8f"`);
+        await queryRunner.query(`ALTER TABLE "exam" DROP CONSTRAINT "FK_e6b0d68b26f7847f2d46810df8f"`);
+        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "FK_3148e7834f4910fcc0ffa9ac9ed"`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "FK_aaf8d9e0e5ee595daec766880ad"`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "FK_064d129936a1e821d637ee8c88e"`);
+        await queryRunner.query(`ALTER TABLE "room" ALTER COLUMN "centroid" TYPE geometry(GEOMETRY,0)`);
+        await queryRunner.query(`ALTER TABLE "room" ALTER COLUMN "geometry" TYPE geometry(GEOMETRY,0)`);
+        await queryRunner.query(`ALTER TABLE "course_locations" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "course_locations" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "locations" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "locations" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "accessibilityNotes"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "accessibilityNotes" text`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "nearbyLandmarks"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "nearbyLandmarks" text`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP COLUMN "description"`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD "description" text`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD CONSTRAINT "UQ_1c65ef243169e51b514c814eeae" UNIQUE ("code")`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" ALTER COLUMN "created_at" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "UQ_aaf8d9e0e5ee595daec766880ad"`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "UQ_student_profiles_studentId" UNIQUE ("studentId")`);
+        await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" DROP COLUMN "feature"`);
+        await queryRunner.query(`ALTER TABLE "schedules" DROP COLUMN "feature"`);
+        await queryRunner.query(`ALTER TABLE "schedules" DROP COLUMN "courseName"`);
+        await queryRunner.query(`CREATE TYPE "public"."events_type_enum" AS ENUM('academico', 'cultural', 'esportivo', 'social', 'outro')`);
+        await queryRunner.query(`ALTER TABLE "events" ADD "type" "public"."events_type_enum" NOT NULL DEFAULT 'academico'`);
+        await queryRunner.query(`ALTER TABLE "schedules" ADD "course" character varying(100)`);
+        await queryRunner.query(`CREATE INDEX "idx_feedbacks_created_at" ON "feedbacks" ("created_at") `);
+        await queryRunner.query(`CREATE INDEX "idx_feedbacks_is_anonymous" ON "feedbacks" ("is_anonymous") `);
+        await queryRunner.query(`CREATE INDEX "idx_feedbacks_vinculo" ON "feedbacks" ("vinculo") `);
+        await queryRunner.query(`CREATE INDEX "IDX_academic_calendar_is_active" ON "academic_calendar" ("isActive") `);
+        await queryRunner.query(`CREATE INDEX "IDX_academic_calendar_year_semester" ON "academic_calendar" ("semester", "year") `);
+        await queryRunner.query(`CREATE INDEX "IDX_academic_calendar_type" ON "academic_calendar" ("type") `);
+        await queryRunner.query(`CREATE INDEX "IDX_academic_calendar_date" ON "academic_calendar" ("date") `);
+        await queryRunner.query(`CREATE INDEX "IDX_events_is_active" ON "events" ("isActive") `);
+        await queryRunner.query(`CREATE INDEX "IDX_events_type" ON "events" ("type") `);
+        await queryRunner.query(`CREATE INDEX "IDX_events_start_date" ON "events" ("startDate") `);
+        await queryRunner.query(`CREATE INDEX "IDX_schedules_shift" ON "schedules" ("shift") `);
+        await queryRunner.query(`CREATE INDEX "IDX_schedules_course" ON "schedules" ("course") `);
+        await queryRunner.query(`CREATE INDEX "IDX_schedules_day_of_week" ON "schedules" ("dayOfWeek") `);
+        await queryRunner.query(`ALTER TABLE "room" ADD CONSTRAINT "FK_room_structure" FOREIGN KEY ("structureId") REFERENCES "structure"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "feedbacks" ADD CONSTRAINT "FK_4334f6be2d7d841a9d5205a100e" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "academic_calendar" ADD CONSTRAINT "FK_67037536b72be1f94194d4f5460" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "events" ADD CONSTRAINT "FK_ca3a0b98f5039238922f9407e1a" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "schedules" ADD CONSTRAINT "FK_e00a5ee3b179da2f408ced6e952" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "exam" ADD CONSTRAINT "FK_e6b0d68b26f7847f2d46810df8f" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_users_courses" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "FK_student_profiles_courses" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "FK_student_profiles_users" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+    }
+
+}
