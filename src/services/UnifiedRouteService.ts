@@ -183,7 +183,6 @@ export class UnifiedRouteService {
 
     const allFloors = Array.from(allFloorsSet).sort((a, b) => a - b);
 
-    console.log('🔍 Buscando rooms para andares:', allFloors);
     
     const rooms = await this.roomRepo
       .createQueryBuilder('room')
@@ -191,12 +190,10 @@ export class UnifiedRouteService {
       .andWhere('room.floor IN (:...floors)', { floors: allFloors })
       .getMany();
 
-    console.log(`✅ Total de rooms encontradas: ${rooms.length}`);
     
     rooms.forEach(room => {
       const hasGeometry = room.geometry ? '✅' : '❌';
       const hasCentroid = room.centroid ? '✅' : '❌';
-      console.log(`   Room: ${room.name}, Andar: ${room.floor}, Geo: ${hasGeometry}, Centroid: ${hasCentroid}`);
     });
 
     const roomsByFloor: { [floor: number]: any[] } = {};
@@ -243,7 +240,6 @@ export class UnifiedRouteService {
     floors: number[];
   } | null> {
     try {
-      console.log('🏢 Buscando informações da estrutura para sala:', destinationRoomId);
 
       const destinationRoom = await this.roomRepo.findOne({
         where: { id: destinationRoomId },
@@ -257,7 +253,6 @@ export class UnifiedRouteService {
 
       const structureId = destinationRoom.structure.id;
 
-      // Buscar todos os andares da estrutura
       const allRooms = await this.roomRepo
         .createQueryBuilder('room')
         .where('room.structureId = :structureId', { structureId })
@@ -265,7 +260,6 @@ export class UnifiedRouteService {
 
       const floors = Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b);
 
-      console.log(`✅ Estrutura encontrada com ${floors.length} andares e ${allRooms.length} salas`);
 
       const roomsByFloor: { [floor: number]: any[] } = {};
       for (const floor of floors) {
@@ -332,7 +326,6 @@ export class UnifiedRouteService {
       if (isMainEntrance) mainEntranceCount++;
       else secondaryDoorCount++;
 
-      // 🔥 CRÍTICO: Se está buscando SOMENTE entrada principal, ignorar portas secundárias
       if (mainEntranceOnly && !isMainEntrance) continue;
 
       const lines = route.geometry.coordinates;
