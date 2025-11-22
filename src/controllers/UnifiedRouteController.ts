@@ -61,10 +61,7 @@ export class UnifiedRouteController {
       // Validação do ponto de partida
       const routeMode: RouteMode = mode === 'driving' ? 'driving' : 'walking';
       
-      let normalizedStart = start.map(Number);
-      if (Math.abs(normalizedStart[0]) <= 90 && Math.abs(normalizedStart[1]) <= 180) {
-        normalizedStart = [normalizedStart[1], normalizedStart[0]];
-      }
+      const normalizedStart = start.map(Number);
 
       // Calcular rota completa
       const result = await this.unifiedService.calculateCompleteRoute(
