@@ -9,7 +9,6 @@ async function runSeeders() {
         const seeders = [
             'seed-all-blocks.ts',
             'seed-external-routes.ts',
-            'seedBlocoB1Manual.ts',
             'seed-internal-passarelas.ts'
         ];
 
