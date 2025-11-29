@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Course } from './Course';
 
 @Entity('schedules')
 export class Schedule {
@@ -21,7 +22,7 @@ export class Schedule {
   dayOfWeek!: string; // dia_semana (Segunda, Terça, etc)
 
   @Column({ length: 100, nullable: true })
-  course?: string; // curso (opcional)
+  courseName?: string; // curso (opcional)
 
   @Column({ length: 20, nullable: true })
   shift?: string; // turno (matutino, vespertino, noturno)
@@ -34,4 +35,10 @@ export class Schedule {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @Column({ length: 100, nullable: true })
+  feature?: string;
+
+  @ManyToOne(() => Course, { nullable: true })
+  course?: Course;
 }

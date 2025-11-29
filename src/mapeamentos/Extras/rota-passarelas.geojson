@@ -1,0 +1,370 @@
+{
+  "type": "FeatureCollection",
+  "name": "rota-passarelas",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Rampa Bloco A: Térreo → Andar 1 (COMPLETA)",
+        "connectsFrom": "A-Terreo",
+        "connectsTo": "A-Andar1",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "ramp",
+        "floor": 0,
+        "fromFloor": 0,
+        "toFloor": 1,
+        "id": 2,
+        "isBathroom": false,
+        "isConnection": true,
+        "isDoor": true,
+        "isRamp": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.944959609291317, -16.294941736282976],
+            [-48.944953449917698, -16.294912085223402],
+            [-48.9451205, -16.294878],
+            [-48.944815572058616, -16.294941059492448]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Bloco A (Andar 0) → Blocos B/C (Andar 2) - Início",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 0,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 10,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9438476, -16.2931654],
+            [-48.9441146, -16.2943206],
+            [-48.9442241, -16.2942873],
+            [-48.9442457, -16.2944456]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Meio",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 11,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": false,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442457, -16.2944456],
+            [-48.9445171, -16.2943867],
+            [-48.9450121, -16.2943037],
+            [-48.9451205, -16.294878]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Chegando Blocos B/C",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 12,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": false,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.944959609291317, -16.294941736282976],
+            [-48.944733162264562, -16.29499796866115],
+            [-48.944501266538424, -16.29504695952004],
+            [-48.944380851149631, -16.295066210256977],
+            [-48.944352113111513, -16.294930180329942]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Entrada Blocos B/C (Andar 2)",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 13,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.944352113111513, -16.294930180329942],
+            [-48.9442313, -16.2949591],
+            [-48.9442227, -16.2949242]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Corredor Blocos B/C",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 14,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": false,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442227, -16.2949242],
+            [-48.9441416, -16.2949435]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Bifurcação",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 15,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": false,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442313, -16.2949591],
+            [-48.9442412, -16.295001],
+            [-48.9440717, -16.2950388]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Porta Bloco B1",
+        "connectsFrom": "A",
+        "connectsTo": "B1",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 16,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442412, -16.295001],
+            [-48.9442722, -16.2951468],
+            [-48.9442628, -16.295149]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Porta alternativa Bloco B1",
+        "connectsFrom": "A",
+        "connectsTo": "B1",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 17,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442722, -16.2951468],
+            [-48.9443398, -16.2953947],
+            [-48.9443259, -16.2953977]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Corredor Bloco B1",
+        "connectsFrom": "A",
+        "connectsTo": "B1",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 18,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": false,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9443398, -16.2953947],
+            [-48.9443627, -16.2954834]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Passarela Alta: Porta alternativa 2",
+        "connectsFrom": "A",
+        "connectsTo": "B",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 2,
+        "fromFloor": 0,
+        "toFloor": 2,
+        "id": 19,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9442227, -16.2949242],
+            [-48.9441941, -16.2947631],
+            [-48.9441851, -16.2947656]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "description": "Rota Coberta: Porta Bloco E (Andar 1)",
+        "connectsFrom": "A",
+        "connectsTo": "E",
+        "felt:color": "#C93535",
+        "felt:type": "Path",
+        "type": "level_passage",
+        "floor": 1,
+        "fromFloor": 0,
+        "toFloor": 1,
+        "id": 21,
+        "isBathroom": false,
+        "isConnection": true,
+        "isLevelPassage": true,
+        "isDoor": true,
+        "isStairs": false
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [-48.9440244, -16.2943405],
+            [-48.9440419, -16.2943366],
+            [-48.944115, -16.2943205]
+          ]
+        ]
+      }
+    }
+  ]
+}

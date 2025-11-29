@@ -19,34 +19,53 @@ export class UnifiedRouteController {
    *   "mode": "walking" | "driving"  // opcional, default: "walking"
    * }
    */
-  async getCompleteRoute(req: Request, res: Response) {
+ async getCompleteRoute(req: Request, res: Response) {
     try {
       console.log('\n📍 [API] getCompleteRoute chamado');
       console.log('Body:', req.body);
 
       const { start, destinationRoomId, mode } = req.body;
 
-      // Validação
-      if (!start || !Array.isArray(start) || start.length !== 2) {
-        return res.status(400).json({
-          error: 'Campo "start" inválido. Deve ser um array [longitude, latitude]'
-        });
-      }
-
+      // Validação do destinationRoomId
       if (!destinationRoomId || isNaN(Number(destinationRoomId))) {
         return res.status(400).json({
           error: 'Campo "destinationRoomId" inválido ou ausente'
         });
       }
 
+      // ✨ NOVO: Se não houver ponto de partida, retorna apenas informações da estrutura
+      if (!start || !Array.isArray(start) || start.length !== 2) {
+        console.log('⚠️ Nenhum ponto de partida fornecido - retornando apenas estrutura');
+        
+        const structureInfo = await this.unifiedService.getStructureInfo(Number(destinationRoomId));
+        
+        if (!structureInfo) {
+          return res.status(404).json({
+            error: 'Sala não encontrada'
+          });
+        }
+
+        return res.json({
+          success: true,
+          mode: 'structure_only',
+          data: {
+            structure: structureInfo.structure,
+            roomsByFloor: structureInfo.roomsByFloor,
+            destinationRoom: structureInfo.destinationRoom,
+            floors: structureInfo.floors
+          },
+          message: 'Nenhuma rota calculada. Estrutura e salas retornadas para visualização.'
+        });
+      }
+
+      // Validação do ponto de partida
       const routeMode: RouteMode = mode === 'driving' ? 'driving' : 'walking';
-let normalizedStart = start.map(Number);
-if (Math.abs(normalizedStart[0]) <= 90 && Math.abs(normalizedStart[1]) <= 180) {
-  normalizedStart = [normalizedStart[1], normalizedStart[0]];
-}
+      
+      const normalizedStart = start.map(Number);
+
       // Calcular rota completa
       const result = await this.unifiedService.calculateCompleteRoute(
-        start.map(Number),
+        normalizedStart,
         Number(destinationRoomId),
         routeMode
       );
@@ -57,7 +76,6 @@ if (Math.abs(normalizedStart[0]) <= 90 && Math.abs(normalizedStart[1]) <= 180) {
         });
       }
 
-      console.log('✅ [API] Rota calculada com sucesso');
 
       return res.json({
         success: true,
@@ -78,7 +96,6 @@ if (Math.abs(normalizedStart[0]) <= 90 && Math.abs(normalizedStart[1]) <= 180) {
       });
     }
   }
-
   /**
    * Endpoint alternativo: Calcula apenas rota interna (mantém compatibilidade)
    * 

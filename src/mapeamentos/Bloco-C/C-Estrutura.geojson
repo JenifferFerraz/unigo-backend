@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "parsed",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"xy_coordinate_resolution": 1e-07,
+"features": [
+{ "type": "Feature", "properties": { "felt:feature": 1, "felt:has_geometry": true, "felt:h3_index": null, "felt:geometry_size": 262, "name": "C ESTRUTURA", "felt:color": "#000000", "felt:hasLongDescription": false, "felt:id": "FlPG1RzCQLGqgSBiQiaSdC", "felt:locked": false, "felt:ordering": 1760915533852625, "felt:parentId": "2fJHaB00Q9BSS3gLzH2k37B", "felt:radiusDisplayAngle": 90, "felt:type": "Polygon", "felt:widthScale": 1 }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ -48.9437363, -16.2951646 ], [ -48.9437292, -16.2951328 ], [ -48.9436935, -16.2951117 ], [ -48.9437165, -16.2950775 ], [ -48.9436491, -16.294784 ], [ -48.9441307, -16.2946821 ], [ -48.9441732, -16.2948683 ], [ -48.9439318, -16.2949184 ], [ -48.9439699, -16.2950826 ], [ -48.9438733, -16.295103 ], [ -48.9438806, -16.2951353 ], [ -48.9438809, -16.2951356 ], [ -48.9438574, -16.2951399 ], [ -48.943742, -16.295164 ], [ -48.9437363, -16.2951646 ] ] ] ] } }
+]
+}

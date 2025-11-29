@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Course } from './Course';
 
 @Entity('events')
 export class Event {
@@ -6,26 +7,25 @@ export class Event {
   id!: number;
 
   @Column({ length: 200 })
-  title!: string; 
+  title!: string;
 
   @Column({ type: 'text' })
-  description!: string; 
+  description!: string;
 
   @Column({ type: 'timestamp' })
-  startDate!: Date; 
+  startDate!: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  endDate?: Date; 
+  endDate?: Date;
 
   @Column({ length: 200, nullable: true })
-  location?: string; 
+  location?: string;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: ['academico', 'cultural', 'esportivo', 'social', 'outro'],
     default: 'academico'
   })
-  type!: string; 
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
@@ -35,4 +35,10 @@ export class Event {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  @ManyToOne(() => Course, { nullable: true })
+  course?: Course;
+
+  @Column({ length: 255, nullable: true })
+  link?: string;
 }

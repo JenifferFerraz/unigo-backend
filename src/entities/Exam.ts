@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Course } from './Course';
 
-@Entity()
+@Entity('exam')
 export class Exam {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -17,12 +18,16 @@ export class Exam {
     @Column({ length: 50 })
     time!: string;
 
-    @Column({ length: 20, nullable: true })
+    @Column({ length: 100, nullable: true })
     grade?: string;
     
     @Column({ length: 20, nullable: true })
     shift?: string;
+    
     @Column({ type: 'int', default: 1 })
     cycle!: number;
+
+    @ManyToOne(() => Course, { nullable: true })
+    course?: Course;
 }
 

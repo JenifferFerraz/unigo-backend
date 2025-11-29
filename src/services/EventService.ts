@@ -7,6 +7,7 @@ interface EventFilters {
   isActive?: boolean;
   startDate?: string;
   endDate?: string;
+  courseId?: number;
 }
 
 class EventService {
@@ -34,6 +35,10 @@ class EventService {
       queryBuilder.andWhere('event.startDate >= :startDate', { startDate: filters.startDate });
     } else if (filters.endDate) {
       queryBuilder.andWhere('event.startDate <= :endDate', { endDate: filters.endDate });
+    }
+
+    if (filters.courseId) {
+      queryBuilder.andWhere('event.courseId = :courseId', { courseId: filters.courseId });
     }
 
     queryBuilder.orderBy('event.startDate', 'ASC');

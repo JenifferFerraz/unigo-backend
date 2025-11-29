@@ -7,7 +7,8 @@ async function runSeeders() {
     try {
 
         const seeders = [
-            'seed-external-routes.ts'
+            'seed-all-blocks.ts',
+            'seed-external-routes.ts',
         ];
 
         for (const seeder of seeders) {
