@@ -46,12 +46,12 @@ export class UnifiedRouteService {
   private roomRepo = AppDataSource.getRepository(Room);
   private structureRepo = AppDataSource.getRepository(Structure);
 
-    async calculateCompleteRoute(
+  async calculateCompleteRoute(
     userPosition: number[],
     destinationRoomId: number,
     mode: RouteMode = 'walking'
   ): Promise<UnifiedRouteResponse | null> {
-   
+
     const destinationRoom = await this.roomRepo.findOne({
       where: { id: destinationRoomId },
       relations: ['structure']
@@ -166,7 +166,7 @@ export class UnifiedRouteService {
 
     const structure = await this.structureRepo.findOne({
       where: { id: structureId }
-  
+
     });
 
     const allFloorsSet = new Set<number>([entryFloor, destinationFloor, ...floorsTraversed]);
@@ -183,14 +183,14 @@ export class UnifiedRouteService {
 
     const allFloors = Array.from(allFloorsSet).sort((a, b) => a - b);
 
-    
+
     const rooms = await this.roomRepo
       .createQueryBuilder('room')
       .where('room.structureId = :structureId', { structureId })
       .andWhere('room.floor IN (:...floors)', { floors: allFloors })
       .getMany();
 
-    
+
     rooms.forEach(room => {
       const hasGeometry = room.geometry ? '✅' : '❌';
       const hasCentroid = room.centroid ? '✅' : '❌';
@@ -295,7 +295,8 @@ export class UnifiedRouteService {
     floor?: number,
     mainEntranceOnly: boolean = false
   ): Promise<{ coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null> {
-    
+
+  
     const whereClause: any = {
       structure: { id: structureId }
     };
@@ -308,11 +309,14 @@ export class UnifiedRouteService {
       where: whereClause
     });
 
-    let minDistanceMain = Infinity;
-    let nearestMainDoor: { coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null = null;
 
-    let minDistanceAny = Infinity;
-    let nearestAnyDoor: { coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null = null;
+  
+    const doorsByFloor = new Map<number, Array<{
+      coordinates: number[];
+      distance: number;
+      isMainEntrance: boolean;
+      route: any;
+    }>>();
 
     let mainEntranceCount = 0;
     let secondaryDoorCount = 0;
@@ -322,7 +326,7 @@ export class UnifiedRouteService {
       if (!route.geometry?.coordinates) continue;
 
       const isMainEntrance = route.properties['In/Out'] === true;
-      
+
       if (isMainEntrance) mainEntranceCount++;
       else secondaryDoorCount++;
 
@@ -334,49 +338,78 @@ export class UnifiedRouteService {
         for (const point of line) {
           const distance = haversine(position, point);
 
-          if (isMainEntrance && distance < minDistanceMain) {
-            minDistanceMain = distance;
-            nearestMainDoor = {
-              coordinates: point,
-              floor: route.floor,
-              distance,
-              isMainEntrance: true
-            };
+          if (!doorsByFloor.has(route.floor)) {
+            doorsByFloor.set(route.floor, []);
           }
 
-          if (distance < minDistanceAny) {
-            minDistanceAny = distance;
-            nearestAnyDoor = {
-              coordinates: point,
-              floor: route.floor,
-              distance,
-              isMainEntrance: isMainEntrance
-            };
-          }
+          doorsByFloor.get(route.floor)!.push({
+            coordinates: point,
+            distance,
+            isMainEntrance,
+            route
+          });
         }
       }
     }
 
-  
-    if (mainEntranceOnly) {
-      if (nearestMainDoor) {
-        return nearestMainDoor;
+    if (doorsByFloor.has(0)) {
+
+      const groundDoors = doorsByFloor.get(0)!;
+
+      const mainEntrances = groundDoors.filter(d => d.isMainEntrance);
+      if (mainEntrances.length > 0) {
+        const nearest = mainEntrances.sort((a, b) => a.distance - b.distance)[0];
+        return {
+          coordinates: nearest.coordinates,
+          floor: 0,
+          distance: nearest.distance,
+          isMainEntrance: true
+        };
       }
-      return null;
+
+      // Se não houver entrada principal, usar qualquer porta do térreo
+      if (!mainEntranceOnly && groundDoors.length > 0) {
+        const nearest = groundDoors.sort((a, b) => a.distance - b.distance)[0];
+        return {
+          coordinates: nearest.coordinates,
+          floor: 0,
+          distance: nearest.distance,
+          isMainEntrance: false
+        };
+      }
     }
 
-    if (nearestMainDoor) {
-      return nearestMainDoor;
-    }
+    const floorsWithDoors = Array.from(doorsByFloor.keys()).sort((a, b) => a - b);
 
-    if (nearestAnyDoor) {
-      return nearestAnyDoor;
+    for (const currentFloor of floorsWithDoors) {
+      const doorsOnFloor = doorsByFloor.get(currentFloor)!;
+
+      const mainEntrances = doorsOnFloor.filter(d => d.isMainEntrance);
+      if (mainEntrances.length > 0) {
+        const nearest = mainEntrances.sort((a, b) => a.distance - b.distance)[0];
+        return {
+          coordinates: nearest.coordinates,
+          floor: currentFloor,
+          distance: nearest.distance,
+          isMainEntrance: true
+        };
+      }
+
+      // Se não for obrigatório entrada principal, usar qualquer porta
+      if (!mainEntranceOnly && doorsOnFloor.length > 0) {
+        const nearest = doorsOnFloor.sort((a, b) => a.distance - b.distance)[0];
+        return {
+          coordinates: nearest.coordinates,
+          floor: currentFloor,
+          distance: nearest.distance,
+          isMainEntrance: false
+        };
+      }
     }
 
     console.error('   ❌ Nenhuma porta encontrada!');
     return null;
   }
-
   private async calculateExternalRoute(
     start: number[],
     end: number[],
@@ -540,12 +573,27 @@ export class UnifiedRouteService {
     return graph;
   }
 
+  // ============================================
+  // DEBUG COMPLETO - Adicionar no mapAllFloorConnections
+  // ============================================
+
   private async mapAllFloorConnections(structureId: number): Promise<StairConnection[]> {
-    const allRoutes = await this.internalRouteRepo.find({
+    const internalRoutes = await this.internalRouteRepo.find({
       where: {
         structure: { id: structureId }
       }
     });
+
+    const externalRoutes = await this.externalRouteRepo.find();
+    const allRoutes = [...internalRoutes, ...externalRoutes];
+
+    const structure = await this.structureRepo.findOne({ where: { id: structureId } });
+    let blocoDestino = "";
+    if (structure && structure.description) {
+      const match = String(structure.description).trim().match(/([A-Za-z0-9]+)$/);
+      if (match) blocoDestino = match[1].toUpperCase();
+    }
+
 
     const stairsByFloor = new Map<number, number[][]>();
     const doorsByFloor = new Map<number, number[][]>();
@@ -553,53 +601,92 @@ export class UnifiedRouteService {
 
 
     for (const route of allRoutes) {
-      if (!route.geometry?.coordinates) continue;
-
+      let points: number[][] = [];
       const floor = route.floor;
-      const points: number[][] = [];
 
-      for (const line of route.geometry.coordinates) {
-        points.push(...line);
-      }
-
-      const isPassarela = route.properties?.type === 'level_passage' || 
-                         route.properties?.isConnection === true ||
-                         route.properties?.isLevelPassage === true;
-
-      if (isPassarela) {
-        const fromFloor = route.properties?.fromFloor ?? floor;
-        const toFloor = route.properties?.toFloor;
-
-        if (typeof fromFloor === 'number' && typeof toFloor === 'number' && fromFloor !== toFloor) {
-          const key = `${Math.min(fromFloor, toFloor)}-${Math.max(fromFloor, toFloor)}`;
-          
-          if (!passagesByConnection.has(key)) {
-            passagesByConnection.set(key, { 
-              fromFloor: Math.min(fromFloor, toFloor), 
-              toFloor: Math.max(fromFloor, toFloor), 
-              points: [] 
-            });
-          }
-          passagesByConnection.get(key)!.points.push(...points);
+      if (route.geometry?.coordinates && route.geometry.coordinates.length > 0) {
+        for (const line of route.geometry.coordinates) {
+          points.push(...line);
+        }
+      } else {
+        if (route.properties?.centroid && Array.isArray(route.properties.centroid)) {
+          points.push(route.properties.centroid);
+        } else if (route.properties?.door && Array.isArray(route.properties.door)) {
+          points.push(route.properties.door);
         }
       }
 
+  
       if (route.properties?.isStairs === true) {
         if (!stairsByFloor.has(floor)) stairsByFloor.set(floor, []);
         stairsByFloor.get(floor)!.push(...points);
+
       }
+
 
       if (route.properties?.isDoor === true) {
         if (!doorsByFloor.has(floor)) doorsByFloor.set(floor, []);
         doorsByFloor.get(floor)!.push(...points);
       }
+
+      const isPassarela = route.properties?.type === 'level_passage' ||
+        route.properties?.type === 'ramp' ||
+        route.properties?.isConnection === true ||
+        route.properties?.isLevelPassage === true ||
+        route.properties?.isPassarela === true;
+
+      if (isPassarela) {
+        const fromFloor = route.properties?.fromFloor ?? floor;
+        const toFloor = route.properties?.toFloor;
+        const connectsFrom = route.properties?.connectsFrom;
+        const connectsTo = route.properties?.connectsTo;
+
+        let aceitaConexao = false;
+        if (blocoDestino && connectsFrom && connectsTo) {
+          const fromOk = String(connectsFrom).toUpperCase().startsWith(blocoDestino);
+          const toOk = String(connectsTo).toUpperCase().startsWith(blocoDestino);
+          if (fromOk && toOk) {
+            aceitaConexao = true;
+          }
+        }
+
+        if (!aceitaConexao) {
+          continue;
+        }
+
+        if (typeof fromFloor === 'number' && typeof toFloor === 'number' && fromFloor !== toFloor) {
+          const key = `${Math.min(fromFloor, toFloor)}-${Math.max(fromFloor, toFloor)}`;
+          if (!passagesByConnection.has(key)) {
+            passagesByConnection.set(key, {
+              fromFloor: Math.min(fromFloor, toFloor),
+              toFloor: Math.max(fromFloor, toFloor),
+              points: []
+            });
+          }
+          if (points.length > 0) {
+            const lastPoints = passagesByConnection.get(key)!.points;
+            let addPoints = true;
+            if (lastPoints.length > 0) {
+              const dist = haversine(points[0], lastPoints[lastPoints.length - 1]);
+              if (dist > 30) addPoints = false;
+            }
+            if (addPoints) {
+              passagesByConnection.get(key)!.points.push(...points);
+            }
+          }
+        }
+      }
     }
+
+
+
 
     const connections: StairConnection[] = [];
 
+
     for (const [key, { fromFloor, toFloor, points }] of passagesByConnection) {
       if (points.length < 2) {
-        console.warn(`      ⚠️  Passarela ${key} sem pontos suficientes`);
+        console.warn(`⚠️ Passarela ${key} sem pontos suficientes`);
         continue;
       }
 
@@ -611,7 +698,6 @@ export class UnifiedRouteService {
         distance: 0.5,
         type: 'level_passage'
       });
-
     }
 
     const allFloors = Array.from(new Set([
@@ -619,6 +705,7 @@ export class UnifiedRouteService {
       ...doorsByFloor.keys()
     ])).sort((a, b) => a - b);
 
+    const STAIR_TOLERANCE = 60; 
 
     for (let i = 0; i < allFloors.length; i++) {
       for (let j = i + 1; j < allFloors.length; j++) {
@@ -632,12 +719,19 @@ export class UnifiedRouteService {
         const stairsB = stairsByFloor.get(floorB) || [];
 
         let connectionsFound = 0;
+        let minDistance = Infinity;
+        let closestPair: { pointA: number[], pointB: number[], dist: number } | null = null;
 
         for (const pointA of stairsA) {
           for (const pointB of stairsB) {
             const distance = haversine(pointA, pointB);
 
-            if (distance < 10) {
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestPair = { pointA, pointB, dist: distance };
+            }
+
+            if (distance < STAIR_TOLERANCE) {
               connections.push({
                 floorA,
                 floorB,
@@ -647,12 +741,14 @@ export class UnifiedRouteService {
                 type: 'stairs'
               });
               connectionsFound++;
+
             }
           }
         }
 
       }
     }
+
 
     for (let i = 0; i < allFloors.length; i++) {
       for (let j = i + 1; j < allFloors.length; j++) {
@@ -682,12 +778,12 @@ export class UnifiedRouteService {
           }
         }
 
-        
+       
       }
     }
+
     return connections;
   }
-
   private async calculateInternalRouteMultiFloor(
     structureId: number,
     startFloor: number,
@@ -841,28 +937,103 @@ export class UnifiedRouteService {
     endFloor: number,
     connections: StairConnection[]
   ): number[] | null {
-    const graph = new Map<number, Array<{ floor: number; distance: number }>>();
+ 
+    const validConnections = connections.filter(conn => {
+      const isValid =
+        typeof conn.floorA === 'number' &&
+        typeof conn.floorB === 'number' &&
+        !isNaN(conn.floorA) &&
+        !isNaN(conn.floorB);
 
+   
+
+      return isValid;
+    });
+
+
+
+
+    const stairConnections = validConnections.filter(c => c.type === 'stairs');
+    const passageConnections = validConnections.filter(c => c.type === 'level_passage');
+
+    const stairPath = this.findPathUsingConnections(
+      startFloor,
+      endFloor,
+      stairConnections
+    );
+
+    if (stairPath && stairPath.length > 0) {
+      return stairPath;
+    }
+
+
+
+    const combinedPath = this.findPathUsingConnections(
+      startFloor,
+      endFloor,
+      validConnections
+    );
+
+    if (combinedPath && combinedPath.length > 0) {
+      return combinedPath;
+    }
+
+    console.error(`   ❌ Não foi possível conectar os andares`);
+    return null;
+  }
+
+  private findPathUsingConnections(
+    startFloor: number,
+    endFloor: number,
+    connections: StairConnection[]
+  ): number[] | null {
+
+    if (connections.length === 0) {
+      return null;
+    }
+
+    const graph = new Map<number, Array<{ floor: number; distance: number; type: 'stairs' | 'level_passage' }>>();
+
+    // Construir o grafo
     for (const conn of connections) {
       if (!graph.has(conn.floorA)) graph.set(conn.floorA, []);
       if (!graph.has(conn.floorB)) graph.set(conn.floorB, []);
 
-      graph.get(conn.floorA)!.push({ floor: conn.floorB, distance: conn.distance });
-      graph.get(conn.floorB)!.push({ floor: conn.floorA, distance: conn.distance });
+      graph.get(conn.floorA)!.push({
+        floor: conn.floorB,
+        distance: conn.distance,
+        type: conn.type
+      });
+
+      graph.get(conn.floorB)!.push({
+        floor: conn.floorA,
+        distance: conn.distance,
+        type: conn.type
+      });
     }
 
+    // Verificar se os andares estão no grafo
     if (!graph.has(startFloor) || !graph.has(endFloor)) {
       return null;
     }
 
+    // ============================================
+    // Dijkstra MODIFICADO: Priorizar escadas
+    // ============================================
     const distances = new Map<number, number>();
-    const previous = new Map<number, number>();
+    const previous = new Map<number, number | null>();
     const unvisited = new Set<number>(graph.keys());
 
-    graph.forEach((_, floor) => distances.set(floor, Infinity));
+    // Inicializar distâncias
+    graph.forEach((_, floor) => {
+      distances.set(floor, Infinity);
+      previous.set(floor, null);
+    });
+
     distances.set(startFloor, 0);
 
     while (unvisited.size > 0) {
+      // Encontrar o nó não visitado com menor distância
       let current: number | null = null;
       let minDist = Infinity;
 
@@ -874,15 +1045,28 @@ export class UnifiedRouteService {
         }
       }
 
-      if (current === null || current === endFloor) break;
+      if (current === null || minDist === Infinity) {
+        break;
+      }
+
+      if (current === endFloor) {
+        break;
+      }
 
       unvisited.delete(current);
 
       const neighbors = graph.get(current) || [];
-      for (const { floor: neighbor, distance } of neighbors) {
+      for (const { floor: neighbor, distance, type } of neighbors) {
         if (!unvisited.has(neighbor)) continue;
 
-        const alt = distances.get(current)! + distance;
+        // ============================================
+        // NOVO: Aplicar peso menor para escadas (priorizar)
+        // ============================================
+        const weightMultiplier = type === 'stairs' ? 1.0 : 3.0; // Passarelas têm peso 3x maior
+        const weightedDistance = distance * weightMultiplier;
+
+        const alt = distances.get(current)! + weightedDistance;
+
         if (alt < distances.get(neighbor)!) {
           distances.set(neighbor, alt);
           previous.set(neighbor, current);
@@ -890,16 +1074,32 @@ export class UnifiedRouteService {
       }
     }
 
+    // Reconstruir caminho
     const path: number[] = [];
-    let current: number | undefined = endFloor;
+    let current: number | null = endFloor;
+    let iterations = 0;
+    const maxIterations = 100;
 
-    while (current !== undefined) {
+    while (current !== null && iterations < maxIterations) {
       path.unshift(current);
-      current = previous.get(current);
+      const prev = previous.get(current);
+
+      if (prev === null) {
+        break;
+      }
+
+      current = prev;
+      iterations++;
     }
 
-    return path[0] === startFloor ? path : null;
+    // Verificar se o caminho é válido
+    if (path.length === 0 || path[0] !== startFloor || path[path.length - 1] !== endFloor) {
+      return null;
+    }
+
+    return path;
   }
+
 
   private findBestConnection(
     floorA: number,
@@ -907,6 +1107,7 @@ export class UnifiedRouteService {
     currentPoint: number[],
     connections: StairConnection[]
   ): StairConnection | null {
+
     const validConnections = connections.filter(
       c => (c.floorA === floorA && c.floorB === floorB) ||
         (c.floorA === floorB && c.floorB === floorA)
@@ -914,28 +1115,68 @@ export class UnifiedRouteService {
 
     if (validConnections.length === 0) return null;
 
-    let bestConnection: StairConnection | null = null;
-    let minDistance = Infinity;
 
-    for (const conn of validConnections) {
-      const pointToCheck = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
-      const distance = haversine(currentPoint, pointToCheck);
+    const stairConnections = validConnections.filter(c => c.type === 'stairs');
 
-      if (distance < minDistance) {
-        minDistance = distance;
+    if (stairConnections.length > 0) {
 
-        bestConnection = conn.floorA === floorA ? conn : {
-          floorA: conn.floorB,
-          floorB: conn.floorA,
-          pointOnFloorA: conn.pointOnFloorB,
-          pointOnFloorB: conn.pointOnFloorA,
-          distance: conn.distance,
-          type: conn.type
-        };
+      let bestStair: StairConnection | null = null;
+      let minDistance = Infinity;
+
+      for (const conn of stairConnections) {
+        const pointToCheck = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
+        const distance = haversine(currentPoint, pointToCheck);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          bestStair = conn.floorA === floorA ? conn : {
+            floorA: conn.floorB,
+            floorB: conn.floorA,
+            pointOnFloorA: conn.pointOnFloorB,
+            pointOnFloorB: conn.pointOnFloorA,
+            distance: conn.distance,
+            type: conn.type
+          };
+        }
+      }
+
+      if (bestStair) {
+        return bestStair;
       }
     }
 
-    return bestConnection;
+
+    const passageConnections = validConnections.filter(c => c.type === 'level_passage');
+
+    if (passageConnections.length > 0) {
+
+      let bestPassage: StairConnection | null = null;
+      let minDistance = Infinity;
+
+      for (const conn of passageConnections) {
+        const pointToCheck = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
+        const distance = haversine(currentPoint, pointToCheck);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          bestPassage = conn.floorA === floorA ? conn : {
+            floorA: conn.floorB,
+            floorB: conn.floorA,
+            pointOnFloorA: conn.pointOnFloorB,
+            pointOnFloorB: conn.pointOnFloorA,
+            distance: conn.distance,
+            type: conn.type
+          };
+        }
+      }
+
+      if (bestPassage) {
+        return bestPassage;
+      }
+    }
+
+    console.error(`   ❌ Nenhuma conexão disponível!`);
+    return null;
   }
 
   private reconstructFullPath(

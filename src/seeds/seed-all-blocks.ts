@@ -483,29 +483,104 @@ async function seedAllBlocks() {
             }
         }
 
-        for (let extraFile of extras) {
-            const extraPath = path.join(__dirname, '../mapeamentos/', extraFile);
+        function normalizeName(str) {
+            return str
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        const extrasFiles = ['CENTRO DE TECNOLOGIAS.geojson', 'GINÁSIO POLIESPORTIVO.geojson'];
+        for (let extraFile of extrasFiles) {
+            const extraPath = path.join(__dirname, '../mapeamentos/Extras/', extraFile);
             const extraGeojson = readGeoJsonIfExists(extraPath);
 
             for (const feature of extraGeojson.features) {
-                let estrutura = await structureRepo.findOne({ where: { name: feature.properties?.name } });
+                // Só salvar estrutura se for Polygon
+                if (!(feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0]))) {
+                    console.warn(`[SEED] Ignorando feature não-Polygon (${feature.geometry?.type}) em ${extraFile}`);
+                    continue;
+                }
+                const nomeEstruturaRaw = (feature.properties?.name || feature.properties?.description || '').trim();
+                const nomeEstruturaNorm = normalizeName(nomeEstruturaRaw);
+                if (!nomeEstruturaNorm) {
+                    console.warn(`[SEED WARNING] Feature sem nome/descrição ignorada em ${extraFile}`);
+                    continue;
+                }
+                let estrutura = await structureRepo.createQueryBuilder('structure')
+                    .where('LOWER(structure.name) = :name', { name: nomeEstruturaNorm })
+                    .getOne();
+
+                let poly = feature.geometry;
+                const coords = poly.coordinates[0];
+                const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
 
                 if (!estrutura) {
-                    let centroid = [0, 0];
-                    if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
-                        const coords = feature.geometry.coordinates[0];
-                        centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
-                    }
-
                     estrutura = structureRepo.create({
-                        name: feature.properties?.name || 'EXTRA',
-                        description: 'Estrutura extra',
-                        geometry: feature.geometry,
+                        name: nomeEstruturaRaw,
+                        description: feature.properties?.description || feature.properties?.name || '',
+                        geometry: poly,
                         centroid: { type: 'Point', coordinates: centroid },
                         floors: [0],
                     });
                     await structureRepo.save(estrutura);
+                    console.log(`[SEED] Estrutura criada: ${nomeEstruturaRaw}`);
+                } else {
+                    estrutura.geometry = poly;
+                    estrutura.centroid = { type: 'Point', coordinates: centroid };
+                    estrutura.description = feature.properties?.description || feature.properties?.name || '';
+                    if (!estrutura.floors || !estrutura.floors.includes(0)) estrutura.floors = [0];
+                    await structureRepo.save(estrutura);
+                    console.log(`[SEED] Estrutura atualizada: ${nomeEstruturaRaw}`);
                 }
+
+                let room = await roomRepo.findOne({ where: { name: nomeEstruturaRaw, structure: { id: estrutura.id }, floor: 0 } });
+                if (!room) {
+                    room = roomRepo.create({
+                        name: nomeEstruturaRaw,
+                        description: estrutura.description,
+                        geometry: estrutura.geometry,
+                        centroid: estrutura.centroid,
+                        floor: 0,
+                        structure: estrutura,
+                    });
+                    await roomRepo.save(room);
+                    console.log(`[SEED] Room criada: ${nomeEstruturaRaw}`);
+                } else {
+                    room.geometry = estrutura.geometry;
+                    room.centroid = estrutura.centroid;
+                    room.description = estrutura.description;
+                    await roomRepo.save(room);
+                    console.log(`[SEED] Room atualizada: ${nomeEstruturaRaw}`);
+                }
+            }
+        }
+
+        // Adicionar rotas extras para Centro de Tecnologia e Ginásio
+        const extraRotas = [
+            { rotaFile: 'Rota-Centro-de-Tecnlogia.geojson', estruturaNames: ['Centro De Tecnologias', 'CENTRO DE TECNOLOGIAS', 'FTT FÁBRICA DE TECNOLOGIAS TURING'] },
+            { rotaFile: 'Rota-Ginasio.geojson', estruturaNames: ['GINÁSIO POLIESPORTIVO'] },
+        ];
+        for (const { rotaFile, estruturaNames } of extraRotas) {
+            const rotaPath = path.join(__dirname, '../mapeamentos/Extras/', rotaFile);
+            const rotasGeojson = readGeoJsonIfExists(rotaPath);
+            for (const feature of rotasGeojson.features) {
+                let estrutura = null;
+                for (const name of estruturaNames) {
+                    estrutura = await structureRepo.findOne({ where: { name } });
+                    if (estrutura) break;
+                }
+                if (!estrutura) continue;
+                // Salvar rota
+                let route = routeRepo.create({
+                    geometry: feature.geometry,
+                    floor: feature.properties?.floor ?? 0,
+                    structure: estrutura,
+                    properties: feature.properties || {},
+                });
+                await routeRepo.save(route);
             }
         }
     } catch (err) {
