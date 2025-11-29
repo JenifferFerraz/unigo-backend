@@ -76,7 +76,6 @@ export class UnifiedRouteController {
         });
       }
 
-      console.log('✅ [API] Rota calculada com sucesso');
 
       return res.json({
         success: true,
