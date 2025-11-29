@@ -3,7 +3,7 @@
 "name": "Rota-A-1-Andar",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
 "features": [
-{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": true, "isDoor": true, "floor": null }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944815572058616, -16.294941059492448 ], [ -48.94468605194858, -16.294967051241741 ] ] ] } },
+{ "type": "Feature", "properties": { "id": 1, "isBathroom": false, "isStairs": true, "isDoor": true, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944815572058616, -16.294941059492448 ], [ -48.94468605194858, -16.294967051241741 ] ] ] } },
 { "type": "Feature", "properties": { "id": 2, "isBathroom": false, "isStairs": false, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.94468605194858, -16.294967051241741 ], [ -48.944662944392093, -16.294971950690844 ], [ -48.944625150830561, -16.29497826478368 ], [ -48.9445567, -16.2949703 ] ] ] } },
 { "type": "Feature", "properties": { "id": 3, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944662944392093, -16.294971950690844 ], [ -48.944669860323607, -16.295001891902938 ], [ -48.9447304, -16.2949882 ] ] ] } },
 { "type": "Feature", "properties": { "id": 5, "isBathroom": true, "isStairs": false, "isDoor": false, "floor": 1 }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -48.944669860323607, -16.295001891902938 ], [ -48.944674376225699, -16.295021977319085 ], [ -48.9447344, -16.2950084 ] ] ] } },
