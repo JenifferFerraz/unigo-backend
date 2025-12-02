@@ -35,6 +35,7 @@ export class IncreaseExamGradeLength1763760317668 implements MigrationInterface 
         await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "createdAt" SET DEFAULT now()`);
         await queryRunner.query(`ALTER TABLE "courses" ALTER COLUMN "updatedAt" SET DEFAULT now()`);
         await queryRunner.query(`ALTER TABLE "student_profiles" DROP CONSTRAINT "UQ_student_profiles_studentId"`);
+        await queryRunner.query(`DELETE FROM "student_profiles" WHERE "id" NOT IN (SELECT MIN("id") FROM "student_profiles" GROUP BY "courseId")`);
         await queryRunner.query(`ALTER TABLE "student_profiles" ADD CONSTRAINT "UQ_aaf8d9e0e5ee595daec766880ad" UNIQUE ("courseId")`);
         await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "createdAt" SET DEFAULT now()`);
         await queryRunner.query(`ALTER TABLE "users" ALTER COLUMN "updatedAt" SET DEFAULT now()`);

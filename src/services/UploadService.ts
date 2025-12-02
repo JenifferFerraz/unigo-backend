@@ -16,14 +16,14 @@ class UploadService {
     try {
       const workbook = XLSX.read(file.buffer, { 
         type: 'buffer',
-        cellDates: !useRaw, // Só converte datas se não usar raw
+        cellDates: !useRaw, 
         cellNF: false,
         cellText: false,
       });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(sheet, { 
-        raw: useRaw, // Se true, mantém valores brutos (evita objetos Date problemáticos)
+        raw: useRaw,
         defval: null,
       });
       return data;
@@ -36,7 +36,7 @@ class UploadService {
    * Valida e importa horários
    */
   async processScheduleFile(file: multer.File): Promise<UploadResult> {
-    const rows = this.parseFile(file);
+    const rows = this.parseFile(file, true);
     const result: UploadResult = {
       totalRows: rows.length,
       successCount: 0,
@@ -46,35 +46,73 @@ class UploadService {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i] as ScheduleRow;
-      const rowNumber = i + 2; 
+      const rowNumber = i + 2;
 
       try {
-        // Validações
         if (!row.disciplina || !row.professor || !row.horario || !row.sala || !row.dia_semana) {
           throw new Error('Campos obrigatórios faltando: disciplina, professor, horario, sala, dia_semana');
         }
 
-        // Buscar o curso pelo nome
-        let courseEntity = undefined;
-        if (row.curso) {
+        let courseId = undefined;
+        let courseName = row.curso || row.nome_curso;
+        if (courseName) {
+          const normalize = (str: string) => str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+          const normalizedCourseName = normalize(courseName);
           const courseRepository = AppDataSource.getRepository('Course');
-          courseEntity = await courseRepository.findOne({ where: { name: row.curso } });
-          if (!courseEntity) {
-            throw new Error(`Curso não encontrado: ${row.curso}`);
+          const allCourses = await courseRepository.find();
+          const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
+          if (!foundCourse) {
+            throw new Error(`Curso não encontrado: ${courseName}`);
+          }
+          courseId = foundCourse.id;
+        }
+
+        let semestreNum = 1;
+        if (row.semestre) {
+          if (typeof row.semestre === 'string') {
+            const match = (row.semestre as string).match(/(\d+)/);
+            semestreNum = match ? parseInt(match[1], 10) : 1;
+          } else if (typeof row.semestre === 'number') {
+            semestreNum = row.semestre;
           }
         }
 
-        // Inserir no banco de dados
+        let horarioStr = '';
+        if (row.horario === null || row.horario === undefined) {
+          horarioStr = '';
+        } else if (Object.prototype.toString.call(row.horario) === '[object Date]') {
+          const h = (row.horario as Date).getHours().toString().padStart(2, '0');
+          const m = (row.horario as Date).getMinutes().toString().padStart(2, '0');
+          const s = (row.horario as Date).getSeconds().toString().padStart(2, '0');
+          horarioStr = `${h}:${m}:${s}`;
+        } else if (typeof row.horario === 'number') {
+          const totalSeconds = Math.round(row.horario * 24 * 60 * 60);
+          const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+          const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+          const s = (totalSeconds % 60).toString().padStart(2, '0');
+          horarioStr = `${h}:${m}:${s}`;
+        } else if (typeof row.horario === 'string') {
+          horarioStr = row.horario.trim();
+        } else {
+          horarioStr = String(row.horario);
+        }
+
         const scheduleRepository = AppDataSource.getRepository(Schedule);
         await scheduleRepository.save({
           subject: row.disciplina,
           professor: row.professor,
-          time: row.horario,
+          time: horarioStr,
           room: row.sala,
           dayOfWeek: row.dia_semana,
-          course: courseEntity,
+          courseId: courseId,
+          courseName: courseName || null,
           shift: row.turno,
-          semester: row.semestre || 1,
+          semester: semestreNum,
         });
 
         result.successCount++;
@@ -114,40 +152,60 @@ class UploadService {
       const rowNumber = i + 2;
 
       try {
-        // Validações
         if (!row.titulo || !row.descricao || !row.data_inicio) {
           throw new Error('Campos obrigatórios faltando: titulo, descricao, data_inicio');
         }
 
-        // Validar formato de data
-        if (!(row.data_inicio instanceof Date) && isNaN(Date.parse(row.data_inicio as any))) {
-          throw new Error('Formato de data inválido para data_inicio');
+        if (!(row.data_inicio instanceof Date)) {
+          const dateString = String(row.data_inicio);
+          if (isNaN(Date.parse(dateString))) {
+            throw new Error('Formato de data inválido para data_inicio');
+          }
         }
 
-        // Buscar o curso pelo nome
         let courseEntity = undefined;
         if (row.nome_curso) {
           const courseRepository = AppDataSource.getRepository('Course');
           courseEntity = await courseRepository.findOne({ where: { name: row.nome_curso } });
-          console.log('[processEventsFile] courseEntity:', courseEntity);
           if (!courseEntity) {
             throw new Error(`Curso não encontrado: ${row.nome_curso}`);
           }
         }
 
-        // Inserir no banco de dados
+
         const eventRepository = AppDataSource.getRepository(Event);
+        let startDate: Date | undefined = undefined;
+        let endDate: Date | undefined = undefined;
+        
+  
+        if (row.data_inicio instanceof Date) {
+          startDate = row.data_inicio;
+        } else if (typeof row.data_inicio === 'string') {
+          startDate = new Date(row.data_inicio);
+        } else if (row.data_inicio) {
+      
+          startDate = new Date(String(row.data_inicio));
+        }
+        
+        if (row.data_fim instanceof Date) {
+          endDate = row.data_fim;
+        } else if (typeof row.data_fim === 'string') {
+          endDate = new Date(row.data_fim);
+        } else if (row.data_fim) {
+
+          endDate = new Date(String(row.data_fim));
+        }
+        
         const eventData = {
           title: row.titulo,
           description: row.descricao,
-          startDate: new Date(row.data_inicio),
-          endDate: row.data_fim ? new Date(row.data_fim) : undefined,
+          startDate,
+          endDate,
           location: row.local,
           type: row.tipo || 'academico',
           course: courseEntity,
           link: row.link
         };
-        console.log('[processEventsFile] eventData:', eventData);
         await eventRepository.save(eventData);
 
         result.successCount++;
@@ -187,17 +245,34 @@ class UploadService {
       const rowNumber = i + 2;
 
       try {
-        // Validações
         if (!row.titulo || !row.data || !row.tipo) {
           throw new Error('Campos obrigatórios faltando: titulo, data, tipo');
         }
 
-        // Validar formato de data
         if (!(row.data instanceof Date) && isNaN(Date.parse(row.data as any))) {
           throw new Error('Formato de data inválido');
         }
 
-        // Inserir no banco de dados
+        let courseId = undefined;
+        let courseName = row.curso || row.nome_curso;
+        if (courseName) {
+          const normalize = (str: string) => str
+            .normalize('NFD')
+            .replace(/[ -]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+          const normalizedCourseName = normalize(courseName);
+          const courseRepository = AppDataSource.getRepository('Course');
+          const allCourses = await courseRepository.find();
+          const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
+          if (!foundCourse) {
+            throw new Error(`Curso não encontrado: ${courseName}`);
+          }
+          courseId = foundCourse.id;
+          courseName = foundCourse.name;
+        }
+
         const calendarRepository = AppDataSource.getRepository(AcademicCalendar);
         await calendarRepository.save({
           title: row.titulo,
@@ -206,6 +281,8 @@ class UploadService {
           description: row.descricao,
           semester: row.semestre,
           year: row.ano,
+          courseId: courseId,
+          course: courseName || null,
         });
 
         result.successCount++;
@@ -229,16 +306,11 @@ class UploadService {
   }
   
 
-  /**
-   * Converte data de diferentes formatos para string no formato yyyy-MM-dd
-   * Suporta: Date objects, strings (dd/MM/yyyy, dd/MM/yy), números serial do Excel
-   */
   private parseDate(dateValue: any): string {
     if (dateValue == null || dateValue === '') {
       throw new Error('Data não pode ser nula ou vazia');
     }
 
-    // Se for Date object JavaScript válido
     if (dateValue instanceof Date) {
       if (isNaN(dateValue.getTime())) {
         throw new Error('Data inválida');
@@ -247,25 +319,23 @@ class UploadService {
       if (year < 1900 || year > 2100) {
         throw new Error(`Ano inválido: ${year}`);
       }
-      // Converter manualmente SEM usar toISOString (pode não existir em objetos Date do xlsx)
       const month = String(dateValue.getMonth() + 1).padStart(2, '0');
       const day = String(dateValue.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
 
-    // Se for string
+
     if (typeof dateValue === 'string') {
       const trimmed = dateValue.trim();
       if (trimmed === '') {
         throw new Error('Data não pode ser vazia');
       }
 
-      // Formato ISO yyyy-MM-dd
       if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
         return trimmed;
       }
 
-      // Formato brasileiro dd/MM/yyyy
+
       const brMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
       if (brMatch) {
         const day = parseInt(brMatch[1], 10);
@@ -276,7 +346,6 @@ class UploadService {
         }
       }
 
-      // Formato brasileiro com ano de 2 dígitos dd/MM/yy
       const brMatch2 = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
       if (brMatch2) {
         const day = parseInt(brMatch2[1], 10);
@@ -288,7 +357,6 @@ class UploadService {
         }
       }
 
-      // Tentar parsear como Date
       const parsed = new Date(trimmed);
       if (!isNaN(parsed.getTime())) {
         const year = parsed.getFullYear();
@@ -302,9 +370,8 @@ class UploadService {
       throw new Error(`Formato de data inválido: "${trimmed}". Formatos aceitos: dd/MM/yyyy, dd/MM/yy, yyyy-MM-dd`);
     }
 
-    // Se for número (serial do Excel)
+
     if (typeof dateValue === 'number') {
-      // Número serial do Excel: dias desde 1899-12-30
       const excelEpoch = new Date(1899, 11, 30);
       const date = new Date(excelEpoch.getTime() + dateValue * 86400000);
       if (!isNaN(date.getTime())) {
@@ -321,9 +388,7 @@ class UploadService {
   }
 
   async processExamsFile(file: multer.File): Promise<UploadResult> {
-    // Processa apenas Excel/CSV
-    // Usa raw: true para evitar objetos Date problemáticos do xlsx
-    // As datas virão como números serial do Excel ou strings
+
     const rows = this.parseFile(file, true);
 
     const result: UploadResult = {
@@ -338,12 +403,10 @@ class UploadService {
       const rowNumber = i + 2;
 
       try {
-        // Validações
         if (!row.disciplina || !row.data || !row.horario) {
           throw new Error('Campos obrigatórios faltando: disciplina, data, horario');
         }
 
-        // Converter data para formato string yyyy-MM-dd
         let dateString: string;
         try {
           dateString = this.parseDate(row.data);
@@ -351,17 +414,16 @@ class UploadService {
           throw new Error(`Formato de data inválido na linha ${rowNumber}: ${dateError.message}`);
         }
 
-        // Inserir no banco de dados
+
         const examRepository = AppDataSource.getRepository(Exam);
         
-        // Truncar valores que excedam os limites do banco de dados
+
         const gradeValue = row.curso || row.nome_curso || null;
         const truncatedGrade = gradeValue && gradeValue.length > 100 ? gradeValue.substring(0, 100) : gradeValue;
         
         const shiftValue = row.turno || '';
         const truncatedShift = shiftValue.length > 20 ? shiftValue.substring(0, 20) : shiftValue;
         
-        // Validar tamanho da data (deve ser yyyy-MM-dd = 10 caracteres, mas limite é 20)
         if (dateString.length > 20) {
           throw new Error(`Data convertida excede limite de 20 caracteres: ${dateString}`);
         }
@@ -416,7 +478,6 @@ class UploadService {
     }
 
     const fullPath = path.join(templatesDir, filename);
-    console.log('[UploadService] Template path:', fullPath);
     return fullPath;
   }
 }

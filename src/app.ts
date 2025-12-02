@@ -57,7 +57,7 @@ app.use('/structure', structureRoutes);
 app.use('/routes', unifiedRoutes);
 app.use('/room', roomRouter);
 app.use('/upload', uploadRoutes);
-app.use('/api/schedules', scheduleRoutes);
+app.use('/schedules', scheduleRoutes);
 app.use('/events', eventRoutes);
 app.use('/api/academic-calendar', academicCalendarRoutes);
 app.use('/api/feedback', feedbackRoutes);

@@ -1,7 +1,7 @@
 
 export function haversine(a: number[], b: number[]): number {
   const toRad = (deg: number) => deg * Math.PI / 180;
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000; 
   const dLat = toRad(b[1] - a[1]);
   const dLng = toRad(b[0] - a[0]);
   const lat1 = toRad(a[1]);

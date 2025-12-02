@@ -1,12 +1,13 @@
 export interface ScheduleRow {
   disciplina: string;
   professor: string;
-  horario: string;
+  horario: string | Date | number;
   sala: string;
   dia_semana: string;
   curso?: string;
+  nome_curso?: string;
   turno?: string;
-  semestre?: number;
+  semestre?: number | string;
 }
 
 export interface UploadResult {

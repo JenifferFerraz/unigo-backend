@@ -5,4 +5,6 @@ export interface CalendarRow {
   descricao?: string;
   semestre?: number;
   ano?: number;
+  curso?: string;
+  nome_curso?: string;
 }

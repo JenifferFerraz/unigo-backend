@@ -12,8 +12,10 @@ class AcademicCalendarController {
       const semester = req.query.semester ? parseInt(req.query.semester as string, 10) : undefined;
       const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
       const month = req.query.month ? parseInt(req.query.month as string, 10) : undefined;
+      const course = req.query.course as string | undefined;
+      const courseId = req.query.courseId ? parseInt(req.query.courseId as string, 10) : undefined;
 
-      const calendar = await AcademicCalendarService.findAll({ type, isActive, semester, year, month });
+      const calendar = await AcademicCalendarService.findAll({ type, isActive, semester, year, month, course, courseId });
       return res.status(200).json(calendar);
     } catch (error: any) {
       console.error('[AcademicCalendarController] Erro ao buscar calendário:', error);

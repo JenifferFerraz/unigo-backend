@@ -9,14 +9,7 @@ import * as nodemailer from 'nodemailer';
 class AuthService {
     //** - Repositório de usuários */
     private static userRepository = AppDataSource.getRepository(User);
-    private static transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-        }
-    });
+    // Removido transporter fixo. Será criado dinamicamente para garantir que as variáveis do .env estejam carregadas.
     //** - Valida os dados de login */
 
     public static validateLogin(req: Request): void {
@@ -54,14 +47,25 @@ class AuthService {
         await this.userRepository.save(user);
     
         const { password, ...userData } = user;
-        
-        
+
+        let studentProfile = null;
+        if (user.studentProfile) {
+            studentProfile = {
+                ...user.studentProfile,
+                courseId: user.studentProfile.courseId
+            };
+        }
+
+        const courseId = user.course?.id || user.studentProfile?.courseId || null;
+
         return {
             ...userData,
+            courseId,
+            studentProfile,
             token,
             refreshToken,
-             termsAccepted: user.termsAccepted,
-            requiresTermsAcceptance: !user.termsAccepted 
+            termsAccepted: user.termsAccepted,
+            requiresTermsAcceptance: !user.termsAccepted
         };
     }
 //** - Gera um token JWT para o usuário */
@@ -123,7 +127,15 @@ class AuthService {
 
         const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-        await this.transporter.sendMail({
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+        await transporter.sendMail({
             from: process.env.SMTP_FROM,
             to: email,
             subject: 'Password Reset Request',

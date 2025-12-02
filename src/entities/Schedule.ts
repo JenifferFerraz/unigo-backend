@@ -21,9 +21,6 @@ export class Schedule {
   @Column({ length: 20 })
   dayOfWeek!: string; // dia_semana (Segunda, Terça, etc)
 
-  @Column({ length: 100, nullable: true })
-  courseName?: string; // curso (opcional)
-
   @Column({ length: 20, nullable: true })
   shift?: string; // turno (matutino, vespertino, noturno)
 
@@ -36,8 +33,11 @@ export class Schedule {
   @UpdateDateColumn()
   updatedAt!: Date;
 
+  @Column({ type: 'int', nullable: true })
+  courseId?: number;
+
   @Column({ length: 100, nullable: true })
-  feature?: string;
+  courseName?: string;
 
   @ManyToOne(() => Course, { nullable: true })
   course?: Course;

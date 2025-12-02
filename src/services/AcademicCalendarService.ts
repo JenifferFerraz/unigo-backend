@@ -7,6 +7,8 @@ interface AcademicCalendarFilters {
   semester?: number;
   year?: number;
   month?: number;
+  course?: string;
+  courseId?: number;
 }
 
 class AcademicCalendarService {
@@ -16,6 +18,7 @@ class AcademicCalendarService {
   async findAll(filters: AcademicCalendarFilters): Promise<AcademicCalendar[]> {
     const repository = AppDataSource.getRepository(AcademicCalendar);
     const queryBuilder = repository.createQueryBuilder('calendar');
+
 
     if (filters.type) {
       queryBuilder.andWhere('calendar.type = :type', { type: filters.type });
@@ -30,16 +33,27 @@ class AcademicCalendarService {
     }
 
     if (filters.year) {
-      queryBuilder.andWhere('calendar.year = :year', { year: filters.year });
+      queryBuilder.andWhere('EXTRACT(YEAR FROM calendar.date) = :year', { year: filters.year });
     }
 
     if (filters.month) {
       queryBuilder.andWhere('EXTRACT(MONTH FROM calendar.date) = :month', { month: filters.month });
     }
 
+    if (filters.course) {
+      queryBuilder.andWhere('calendar.course = :course', { course: filters.course });
+    }
+
+    if (filters.courseId !== undefined && filters.courseId !== null) {
+      // Garante que courseId é número
+      const courseIdNum = typeof filters.courseId === 'string' ? parseInt(filters.courseId, 10) : filters.courseId;
+      queryBuilder.andWhere('calendar.courseId = :courseId', { courseId: courseIdNum });
+    }
+
     queryBuilder.orderBy('calendar.date', 'ASC');
 
-    return await queryBuilder.getMany();
+    const result = await queryBuilder.getMany();
+    return result;
   }
 
   /**

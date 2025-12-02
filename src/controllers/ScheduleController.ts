@@ -11,9 +11,10 @@ class ScheduleController {
       const shift = req.query.shift as string | undefined;
       const dayOfWeek = req.query.dayOfWeek as string | undefined;
       const semester = req.query.semester ? parseInt(req.query.semester as string, 10) : undefined;
+      const courseId = req.query.courseId ? parseInt(req.query.courseId as string, 10) : undefined;
 
-      const schedules = await ScheduleService.findAll({ course, shift, dayOfWeek, semester });
-      return res.status(200).json(schedules);
+      const { schedules, periods } = await ScheduleService.findAllWithPeriods({ course, shift, dayOfWeek, semester, courseId });
+      return res.status(200).json({ schedules, periods });
     } catch (error: any) {
       console.error('[ScheduleController] Erro ao buscar horários:', error);
       return res.status(500).json({ message: error.message });

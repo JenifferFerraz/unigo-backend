@@ -12,16 +12,6 @@ export class Course {
     @Column()
     period: number;
 
-    @Column({
-        type: 'enum',
-        enum: ['matutino', 'vespertino', 'noturno', 'integral'],
-        default: 'matutino'
-    })
-    shift: 'matutino' | 'vespertino' | 'noturno' | 'integral';
-
-    @Column()
-    className: string;
-
     @OneToMany(() => User, user => user.course)
     students: User[];
 

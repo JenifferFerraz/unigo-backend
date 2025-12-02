@@ -29,7 +29,6 @@ class LocationService {
      */
     public async createLocation(data: CreateLocationDto): Promise<Location> {
         try {
-            // Check if a location with the same code already exists
             const existingLocation = await this.locationRepository.findOne({ where: { code: data.code } });
             if (existingLocation) {
                 throw new Error(`A location with code ${data.code} already exists`);
@@ -135,19 +134,16 @@ class LocationService {
      */
     public async assignCourseToLocation(data: CourseLocationDto): Promise<CourseLocation> {
         try {
-            // Check if course exists
             const course = await this.courseRepository.findOne({ where: { id: data.courseId } });
             if (!course) {
                 throw new Error(`Course with id ${data.courseId} not found`);
             }
 
-            // Check if location exists
             const location = await this.locationRepository.findOne({ where: { id: data.locationId } });
             if (!location) {
                 throw new Error(`Location with id ${data.locationId} not found`);
             }
 
-            // Check for schedule conflicts
             const existingSchedules = await this.courseLocationRepository.find({
                 where: {
                     locationId: data.locationId,
@@ -173,7 +169,6 @@ class LocationService {
                 throw new Error(`Schedule conflict detected for this location on ${data.dayOfWeek} between ${data.startTime} and ${data.endTime}`);
             }
 
-            // Create the association
             const courseLocation = this.courseLocationRepository.create(data);
             return await this.courseLocationRepository.save(courseLocation);
         } catch (error: any) {

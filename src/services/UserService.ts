@@ -13,7 +13,6 @@ import { sign } from 'jsonwebtoken';
 class UserService {
     private userRepository = AppDataSource.getRepository(User);
     private studentProfileRepository = AppDataSource.getRepository(StudentProfile);
-    //** - Valida os dados de criação de usuário */
     public validateCreateUser(req: Request): void {
         const requiredFields = ['name', 'email', 'password'];
         requiredFields.forEach(field => {
@@ -25,21 +24,18 @@ class UserService {
                 throw new Error(`Invalid value for field: ${field}`);
             }
         });
-        // Não sobrescreve termsAccepted, respeita o valor enviado pelo frontend
     }
     public async create(data: CreateUserDTO): Promise<UserResponseDTO> {
         return await AppDataSource.transaction(async (manager) => {
             const userRepository = manager.getRepository(User);
             const studentProfileRepository = manager.getRepository(StudentProfile);
 
-            // Verifica e-mail (case insensitive)
             const existingEmail = await userRepository.createQueryBuilder('user')
                 .where('LOWER(user.email) = LOWER(:email)', { email: data.email })
                 .andWhere('user.isDeleted = false')
                 .getOne();
             if (existingEmail) throw new Error('Email already registered');
 
-            // Verifica matrícula (case insensitive)
             if (data.studentProfile?.studentId) {
                 const existingDocument = await studentProfileRepository.createQueryBuilder('studentProfile')
                     .where('LOWER(studentProfile.studentId) = LOWER(:studentId)', { studentId: data.studentProfile.studentId })
@@ -47,13 +43,11 @@ class UserService {
                 if (existingDocument) throw new Error('Document ID (matrícula) already registered');
             }
 
-            // Hash da senha antes de salvar
             if (data.password) {
                 const salt = await bcrypt.genSalt(10);
                 data.password = await bcrypt.hash(data.password, salt);
             }
 
-            // Gera tokens
             const token = this.generateToken(data.email);
             const refreshToken = await this.generateRefreshToken(data.email);
 
@@ -80,7 +74,6 @@ class UserService {
                 relations: ['studentProfile']
             });
 
-            // Retorna apenas os dados essenciais do usuário
             return this.mapUserToResponse(completeUser!);
         });
     }

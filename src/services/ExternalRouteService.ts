@@ -42,10 +42,7 @@ export class UnifiedRouteService {
     destinationRoomId: number,
     mode: RouteMode = 'walking'
   ): Promise<UnifiedRouteResponse | null> {
-    console.log(`\n🎯 [UnifiedRoute] Calculando rota completa: modo=${mode}`);
-    console.log(`   Origem: [${userPosition}]`);
-    console.log(`   Destino: Sala #${destinationRoomId}`);
-
+    
     const destinationRoom = await this.roomRepo.findOne({
       where: { id: destinationRoomId },
       relations: ['structure']
@@ -65,8 +62,7 @@ export class UnifiedRouteService {
       return null;
     }
 
-    console.log(`   Estrutura: ${destinationRoom.structure.name} (ID: ${structureId})`);
-    console.log(`   Andar destino: ${destinationFloor}`);
+
 
     const segments: UnifiedRouteSegment[] = [];
     let totalDistance = 0;
@@ -82,11 +78,7 @@ export class UnifiedRouteService {
     const entryPoint = nearestDoor.coordinates;
     const entryFloor = nearestDoor.floor;
     
-    console.log(`\n🚪 Entrada encontrada:`);
-    console.log(`   Coordenadas: [${entryPoint}]`);
-    console.log(`   Distância: ${nearestDoor.distance.toFixed(2)}m`);
-    console.log(`   Andar: ${entryFloor}`);
-
+  
     const externalDistance = haversine(userPosition, entryPoint);
     
     if (externalDistance > 10) { 
@@ -108,8 +100,7 @@ export class UnifiedRouteService {
             : `Caminhar até a entrada (${segmentDistance.toFixed(0)}m)`
         });
         totalDistance += segmentDistance;
-        console.log(`\n🚶 Rota externa calculada: ${segmentDistance.toFixed(2)}m`);
-        console.log(`   Pontos no caminho: ${externalPath.length}`);
+
       }
     }
 
@@ -177,12 +168,6 @@ export class UnifiedRouteService {
     const internalDist = segments
       .filter(s => s.type === 'internal')
       .reduce((sum, s) => sum + s.distance, 0);
-
-    console.log(`\n✅ Rota completa calculada:`);
-    console.log(`   Total: ${totalDistance.toFixed(2)}m`);
-    console.log(`   Tempo estimado: ${estimatedTime.toFixed(1)} min`);
-    console.log(`   Segmentos: ${segments.length}`);
-    console.log(`   Andares: ${allFloors.join(', ')}`);
 
     return {
       segments,
@@ -264,12 +249,7 @@ export class UnifiedRouteService {
   ): Promise<{ segments: UnifiedRouteSegment[] } | null> {
     const segments: UnifiedRouteSegment[] = [];
 
-    console.log(`\n🏢 [InternalRoute] Calculando rota interna multi-andar`);
-    console.log(`   Andar inicial: ${startFloor}`);
-    console.log(`   Andar destino: ${endFloor}`);
-
     if (startFloor === endFloor) {
-      console.log(`   ✅ Mesmo andar - caminho direto`);
       
       const path = await this.findShortestInternalPath(
         structureId,
@@ -296,7 +276,7 @@ export class UnifiedRouteService {
       return { segments };
     }
 
-    console.log(`   🪜 Multi-andar - buscando escadas`);
+
 
     const isGoingUp = startFloor < endFloor;
     const floorsToTraverse = [];
@@ -311,7 +291,7 @@ export class UnifiedRouteService {
       }
     }
 
-    console.log(`   📊 Andares a percorrer: ${floorsToTraverse.join(' → ')}`);
+
 
     let currentPoint = startPoint;
 
@@ -319,10 +299,10 @@ export class UnifiedRouteService {
       const currentFloor = floorsToTraverse[i];
       const isLastFloor = i === floorsToTraverse.length - 1;
 
-      console.log(`\n   🏃 Processando andar ${currentFloor}`);
+
 
       if (isLastFloor) {
-        console.log(`   🎯 Último andar - indo para o destino`);
+;
         
         const path = await this.findShortestInternalPath(
           structureId,
@@ -353,10 +333,8 @@ export class UnifiedRouteService {
           return null;
         }
 
-        console.log(`   🪜 Encontradas ${stairs.length} escadas no andar ${currentFloor}`);
 
         const nearestStair = this.findNearestPoint(stairs, currentPoint);
-        console.log(`   📍 Escada mais próxima: [${nearestStair}]`);
 
         const pathToStair = await this.findShortestInternalPath(
           structureId,
@@ -371,7 +349,6 @@ export class UnifiedRouteService {
         }
 
         const distance = this.calculatePathDistance(pathToStair);
-        console.log(`   ✅ Caminho até escada: ${distance.toFixed(2)}m (${pathToStair.length} pontos)`);
 
         segments.push({
           type: 'internal',
@@ -392,7 +369,7 @@ export class UnifiedRouteService {
 
         const stairOnNextFloor = this.findNearestPoint(nextStairs, nearestStair);
 
-        console.log(`   🔼 Transição: Andar ${currentFloor} → ${nextFloor}`);
+
 
         segments.push({
           type: 'transition',
@@ -409,12 +386,11 @@ export class UnifiedRouteService {
       }
     }
 
-    console.log(`\n   ✅ Rota interna calculada: ${segments.length} segmentos`);
     return { segments };
   }
 
   /**
-   * 🔥 CORREÇÃO PRINCIPAL: Reconstruir caminho completo com TODOS os pontos
+   *CORREÇÃO PRINCIPAL: Reconstruir caminho completo com TODOS os pontos
    */
   private findShortestExternalPath(
     routes: ExternalRoute[],
@@ -422,8 +398,7 @@ export class UnifiedRouteService {
     end: number[],
     tolerance: number = 100
   ): number[][] {
-    console.log('\n🗺️ [ExternalPath] Calculando rota externa com todos os pontos');
-    console.log(`   Rotas disponíveis: ${routes.length}`);
+    
     
     const graph = this.buildGraph(routes);
     const startKey = this.findNearestGraphNode(graph, start, tolerance);
@@ -434,8 +409,7 @@ export class UnifiedRouteService {
       return [start, end];
     }
 
-    console.log(`   Ponto inicial no grafo: ${startKey}`);
-    console.log(`   Ponto final no grafo: ${endKey}`);
+  
 
     const graphPath = this.dijkstra(graph, startKey, endKey);
     
@@ -444,23 +418,19 @@ export class UnifiedRouteService {
       return [start, end];
     }
 
-    console.log(`   Caminho no grafo: ${graphPath.length} nós`);
 
-    // 🔥 CORREÇÃO: Reconstruir com TODOS os pontos intermediários
+
     const fullPath = this.reconstructFullPath(routes, graphPath);
     
-    console.log(`   ✅ Caminho completo: ${fullPath.length} pontos`);
-
     const result: number[][] = [];
     
-    // Adicionar ponto inicial se estiver longe
+
     if (haversine(start, fullPath[0]) > 5) {
       result.push(start);
     }
     
     result.push(...fullPath);
     
-    // Adicionar ponto final se estiver longe
     if (haversine(end, fullPath[fullPath.length - 1]) > 5) {
       result.push(end);
     }
@@ -469,7 +439,7 @@ export class UnifiedRouteService {
   }
 
   /**
-   * 🔥 MÉTODO CRÍTICO: Reconstruir caminho completo entre nós do grafo
+   * MÉTODO CRÍTICO: Reconstruir caminho completo entre nós do grafo
    */
   private reconstructFullPath(
     routes: ExternalRoute[] | InternalRoute[],
@@ -479,19 +449,16 @@ export class UnifiedRouteService {
       return graphPath.map(p => p.split(',').map(Number));
     }
 
-    console.log(`\n   🔨 Reconstruindo caminho com todos os pontos intermediários`);
     const fullPath: number[][] = [];
 
     for (let i = 0; i < graphPath.length - 1; i++) {
       const currentNode = graphPath[i].split(',').map(Number);
       const nextNode = graphPath[i + 1].split(',').map(Number);
       
-      // Adicionar ponto atual se ainda não estiver no caminho
       if (i === 0 || !this.arePointsEqual(fullPath[fullPath.length - 1], currentNode)) {
         fullPath.push([...currentNode]);
       }
       
-      // 🔥 BUSCAR TODOS OS PONTOS INTERMEDIÁRIOS entre currentNode e nextNode
       const segmentPath = this.findRouteSegmentBetweenPoints(
         routes,
         currentNode,
@@ -499,18 +466,14 @@ export class UnifiedRouteService {
       );
       
       if (segmentPath.length > 0) {
-        console.log(`      Segmento ${i}: ${segmentPath.length} pontos intermediários`);
-        // Adicionar todos os pontos do segmento (exceto o primeiro, que já está)
         for (let j = 1; j < segmentPath.length; j++) {
           fullPath.push([...segmentPath[j]]);
         }
       } else {
-        console.log(`      Segmento ${i}: Sem pontos intermediários, linha reta`);
         fullPath.push([...nextNode]);
       }
     }
 
-    // Garantir que o último nó está incluído
     const lastNode = graphPath[graphPath.length - 1].split(',').map(Number);
     if (!this.arePointsEqual(fullPath[fullPath.length - 1], lastNode)) {
       fullPath.push([...lastNode]);
@@ -520,14 +483,14 @@ export class UnifiedRouteService {
   }
 
   /**
-   * 🔥 Encontrar TODOS os pontos entre dois nós em uma rota
+   *  Encontrar TODOS os pontos entre dois nós em uma rota
    */
   private findRouteSegmentBetweenPoints(
     routes: ExternalRoute[] | InternalRoute[],
     start: number[],
     end: number[]
   ): number[][] {
-    const SEARCH_TOLERANCE = 50; // 50 metros de tolerância
+    const SEARCH_TOLERANCE = 50; 
     
     let bestSegment: number[][] | null = null;
     let bestDistance = Infinity;
@@ -544,7 +507,6 @@ export class UnifiedRouteService {
         let minStartDist = Infinity;
         let minEndDist = Infinity;
         
-        // Encontrar índices dos pontos mais próximos
         for (let i = 0; i < line.length; i++) {
           const startDist = haversine(start, line[i]);
           const endDist = haversine(end, line[i]);
@@ -559,15 +521,12 @@ export class UnifiedRouteService {
           }
         }
         
-        // Se encontrou ambos os pontos nesta linha
         if (startIdx !== -1 && endIdx !== -1) {
           const segmentDistance = Math.abs(endIdx - startIdx);
           
-          // Preferir segmentos mais longos (mais pontos intermediários)
           if (segmentDistance > bestDistance) {
             bestDistance = segmentDistance;
             
-            // Extrair TODOS os pontos entre start e end
             if (startIdx < endIdx) {
               bestSegment = line.slice(startIdx, endIdx + 1);
             } else {
@@ -578,12 +537,10 @@ export class UnifiedRouteService {
       }
     }
     
-    // Se encontrou um segmento com pontos intermediários, retornar
     if (bestSegment && bestSegment.length > 0) {
       return bestSegment;
     }
     
-    // Caso contrário, retornar apenas início e fim (linha reta)
     return [start, end];
   }
 
@@ -626,7 +583,6 @@ export class UnifiedRouteService {
       return [];
     }
 
-    // 🔥 Também aplicar reconstrução para rotas internas
     const fullPath = this.reconstructFullPath(routes, path);
     
     return fullPath;

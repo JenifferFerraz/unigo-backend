@@ -12,11 +12,7 @@ export class AcademicCalendar {
   @Column({ type: 'date' })
   date!: Date;
 
-  @Column({
-    type: 'enum',
-    enum: ['inicio_aulas', 'fim_aulas', 'feriado', 'prova', 'recesso', 'evento', 'outro'],
-    default: 'evento'
-  })
+  @Column({ type: 'varchar', length: 50, default: 'evento' })
   type!: string;
 
   @Column({ type: 'text', nullable: true })
@@ -37,9 +33,9 @@ export class AcademicCalendar {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Column({ length: 100, nullable: true })
-  feature?: string;
-
-  @ManyToOne(() => Course, { nullable: true })
-  course?: Course;
+  @Column({ type: 'int', nullable: true })
+  courseId?: number;
+  
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  course?: string;
 }
