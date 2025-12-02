@@ -37,7 +37,10 @@ router.get('/', TokenNode.authorize.bind(TokenNode), TokenNode.isAdmin.bind(Toke
 // Obter estatísticas
 router.get('/stats', TokenNode.authorize.bind(TokenNode), TokenNode.isAdmin.bind(TokenNode), FeedbackController.getStats);
 
-// Exportar para CSV
+// Exportar estatísticas para CSV (usando script Python)
+router.get('/stats/export/csv', TokenNode.authorize.bind(TokenNode), TokenNode.isAdmin.bind(TokenNode), FeedbackController.exportStatsCsv);
+
+// Exportar feedbacks para CSV
 router.get('/export/csv', TokenNode.authorize.bind(TokenNode), TokenNode.isAdmin.bind(TokenNode), FeedbackController.exportCsv);
 
 // Obter feedback por ID

@@ -19,6 +19,10 @@ class UserService {
             if (!req.body[field]) {
                 throw new Error(`Missing required field: ${field}`);
             }
+            else if (!req.body["studentProfile"] && req.body["role"] === "student" || req.body["studentProfile"] && !req.body["studentProfile"]["studentId"]) {
+                throw new Error("Student profile is required for student role and studentId is required");
+            }
+
             const value = req.body[field];
             if (typeof value === 'string' && (/select\s|insert\s|update\s|delete\s|<script>|<html>|<body>/i).test(value)) {
                 throw new Error(`Invalid value for field: ${field}`);
