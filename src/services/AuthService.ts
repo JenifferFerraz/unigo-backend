@@ -5,6 +5,7 @@ import { LoginDTO } from '../dto/Auth';
 import { Request } from 'express';
 import bcrypt from 'bcryptjs';
 import * as nodemailer from 'nodemailer';
+import * as path from 'path';
 
 class AuthService {
     //** - Repositório de usuários */
@@ -36,7 +37,7 @@ class AuthService {
             }
         });
     }
-//** - Realiza o login do usuário */
+    //** - Realiza o login do usuário */
     public static async login(data: LoginDTO): Promise<any> {
         const user = await this.userRepository.findOne({
             where: { 
@@ -84,7 +85,7 @@ class AuthService {
             requiresTermsAcceptance: !user.termsAccepted
         };
     }
-//** - Gera um token JWT para o usuário */
+    //** - Gera um token JWT para o usuário */
     private static generateToken(email: string): string {
         return sign(
             { email }, 
@@ -92,7 +93,7 @@ class AuthService {
             { expiresIn: '15m' }
         );
     }
-//** - Gera um token de atualização para o usuário */
+    //** - Gera um token de atualização para o usuário */
     private static async generateRefreshToken(email: string): Promise<string> {
         const refreshToken = sign(
             { email },
@@ -102,7 +103,7 @@ class AuthService {
 
         return refreshToken;
     }
-//** - Retorna os dados do perfil do usuário atual */
+    //** - Retorna os dados do perfil do usuário atual */
     public static async getProfile(email: string): Promise<Partial<User>> {
         const user = await this.userRepository.findOne({
             where: { email },
@@ -117,7 +118,7 @@ class AuthService {
         return userData;
     }
 
-//** - Retorna o usuário pelo email */
+    //** - Retorna o usuário pelo email */
     public static async getUserByEmail(email: string): Promise<User | null> {
         if (!email) {
             throw new Error('Email is required');
@@ -133,7 +134,7 @@ class AuthService {
             throw new Error('Email is required');
         }
     }
-//** - Inicia o processo de redefinição de senha */
+    //** - Inicia o processo de redefinição de senha */
     public static async requestPasswordReset(email: string): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { email }
@@ -160,18 +161,95 @@ class AuthService {
                 await transporter.sendMail({
                     from: process.env.SMTP_USER,
                     to: email,
-                    subject: 'Pedido de Redefinição de Senha',
+                    subject: 'Redefinição de Senha - UniGo',
+                    attachments: [{
+                        filename: 'Logo.png',
+                            path: path.join(__dirname, '../assets/Logo.png'),
+                        cid: 'logo'
+                    }],
                     html: `
-                        <h1>Pedido de Redefinição de Senha</h1>
-                        <p>Clique no link abaixo para redefinir sua senha:</p>
-                        <a href="${resetLink}">Redefinir Senha</a>
-                        <p>Este link expirará em 1 hora. Se você não fez este pedido, ignore este email.</p>
-                    `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinição de Senha</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" cellspacing="0" cellpadding="0" border="0">
+                    <!-- Header com logo e cor da marca -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #4C40C6 0%, #5D52D6 100%); padding: 40px 20px; text-align: center;">
+                            <img src="cid:logo" alt="UniGo Logo" style="width: 120px; height: auto; margin-bottom: 10px;" />
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Redefinição de Senha</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Conteúdo -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Olá,
+                            </p>
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                                Recebemos uma solicitação para redefinir a senha da sua conta UniGo. Clique no botão abaixo para criar uma nova senha:
+                            </p>
+                            
+                            <!-- Botão de ação -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="border-radius: 8px; background: linear-gradient(135deg, #4C40C6 0%, #5D52D6 100%);">
+                                        <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                                            Redefinir Senha
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 30px 0 20px 0;">
+                                Ou copie e cole este link no seu navegador:
+                            </p>
+                            <p style="color: #4C40C6; font-size: 14px; word-break: break-all; background-color: #f8f8f8; padding: 12px; border-radius: 6px; margin: 0 0 30px 0;">
+                                ${resetLink}
+                            </p>
+                            
+                            <!-- Informações importantes -->
+                            <div style="background-color: #FFF4E6; border-left: 4px solid #FFA726; padding: 16px; border-radius: 6px; margin: 0 0 20px 0;">
+                                <p style="color: #E65100; font-size: 14px; line-height: 1.6; margin: 0; font-weight: 500;">
+                                    ⚠️ Este link expirará em 1 hora por motivos de segurança.
+                                </p>
+                            </div>
+                            
+                            <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0;">
+                                Se você não solicitou a redefinição de senha, pode ignorar este email com segurança. Sua senha permanecerá inalterada.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f8f8; padding: 30px 20px; text-align: center; border-top: 1px solid #eeeeee;">
+                            <p style="color: #999999; font-size: 12px; line-height: 1.6; margin: 0 0 10px 0;">
+                                Este é um email automático, por favor não responda.
+                            </p>
+                            <p style="color: #999999; font-size: 12px; line-height: 1.6; margin: 0;">
+                                © ${new Date().getFullYear()} UniGo. Todos os direitos reservados.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`
                 });
             } catch (emailError: any) {
-                // Loga o erro mas não quebra a requisição
                 console.error('Erro ao enviar email de redefinição de senha:', emailError.message);
-                // Em desenvolvimento, pode ser útil logar o link de reset
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Link de reset (desenvolvimento):', resetLink);
                 }
@@ -183,7 +261,7 @@ class AuthService {
             }
         }
     }
-//** - Completa o processo de redefinição de senha */
+    //** - Completa o processo de redefinição de senha */
     public static async resetPassword(token: string, newPassword: string): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { refreshToken: token }
@@ -197,7 +275,7 @@ class AuthService {
         user.refreshToken = null;
         await this.userRepository.save(user);
     }
-//** - Valida os dados para aceitação dos termos */
+    //** - Valida os dados para aceitação dos termos */
     public static async acceptTerms(userId: number): Promise<void> {
         const user = await this.userRepository.findOne({
             where: { 
