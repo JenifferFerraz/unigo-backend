@@ -17,7 +17,15 @@ academicCalendarRoutes.get(
   AcademicCalendarController.findById.bind(AcademicCalendarController)
 );
 
-// Rotas administrativas (apenas admin)
+
+// Rota PATCH para atualização de evento do calendário (admin)
+academicCalendarRoutes.patch(
+  '/:id',
+  TokenNode.authorize.bind(TokenNode),
+  TokenNode.isAdmin.bind(TokenNode),
+  AcademicCalendarController.update.bind(AcademicCalendarController)
+);
+
 academicCalendarRoutes.delete(
   '/:id',
   TokenNode.authorize.bind(TokenNode),

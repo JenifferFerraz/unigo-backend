@@ -5,6 +5,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 class ExamService {
+        public async update(id: string, updateData: any): Promise<Exam | null> {
+            const repo = AppDataSource.getRepository(Exam);
+            const exam = await repo.findOneBy({ id: Number(id) });
+            if (!exam) return null;
+            repo.merge(exam, updateData);
+            return await repo.save(exam);
+        }
     private async processPdfFile(file: any): Promise<{ success: boolean, message?: string, exams?: any[] }> {
         return new Promise((resolve) => {
             try {

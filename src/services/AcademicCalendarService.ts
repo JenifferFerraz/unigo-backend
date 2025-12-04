@@ -12,6 +12,16 @@ interface AcademicCalendarFilters {
 }
 
 class AcademicCalendarService {
+    /**
+     * Atualizar evento do calendário
+     */
+    async update(id: number, updateData: any): Promise<AcademicCalendar | null> {
+      const repository = AppDataSource.getRepository(AcademicCalendar);
+      const event = await repository.findOneBy({ id });
+      if (!event) return null;
+      repository.merge(event, updateData);
+      return await repository.save(event);
+    }
   /**
    * Buscar todos os eventos do calendário com filtros opcionais
    */

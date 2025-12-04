@@ -2,6 +2,23 @@ import { Request, Response } from 'express';
 import AcademicCalendarService from '../services/AcademicCalendarService';
 
 class AcademicCalendarController {
+    /**
+     * Atualizar evento do calendário
+     */
+    public static async update(req: Request, res: Response): Promise<Response> {
+      try {
+        const id = parseInt(req.params.id, 10);
+        const updateData = req.body;
+        const updatedEvent = await AcademicCalendarService.update(id, updateData);
+        if (!updatedEvent) {
+          return res.status(404).json({ message: 'Evento do calendário não encontrado.' });
+        }
+        return res.status(200).json({ success: true, data: updatedEvent });
+      } catch (error: any) {
+        console.error('[AcademicCalendarController] Erro ao atualizar evento do calendário:', error);
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
   /**
    * Listar todos os eventos do calendário com filtros opcionais
    */

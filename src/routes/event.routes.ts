@@ -4,7 +4,6 @@ import TokenNode from '../middlewares/Token';
 
 const eventRoutes = Router();
 
-// Rotas públicas (qualquer usuário autenticado)
 eventRoutes.get(
   '/',
   TokenNode.authorize.bind(TokenNode),
@@ -17,7 +16,14 @@ eventRoutes.get(
   EventController.findById.bind(EventController)
 );
 
-// Rotas administrativas (apenas admin)
+
+eventRoutes.patch(
+  '/:id',
+  TokenNode.authorize.bind(TokenNode),
+  TokenNode.isAdmin.bind(TokenNode),
+  EventController.update.bind(EventController)
+);
+
 eventRoutes.delete(
   '/:id',
   TokenNode.authorize.bind(TokenNode),

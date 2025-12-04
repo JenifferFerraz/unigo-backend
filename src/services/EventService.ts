@@ -11,6 +11,25 @@ interface EventFilters {
 }
 
 class EventService {
+    /**
+     * Atualizar evento
+     */
+    async update(id: number, updateData: any): Promise<Event | null> {
+      const repository = AppDataSource.getRepository(Event);
+      const event = await repository.findOneBy({ id });
+      if (!event) return null;
+
+      // Corrige datas se vierem como string
+      if (updateData.startDate && typeof updateData.startDate === 'string') {
+        updateData.startDate = new Date(updateData.startDate);
+      }
+      if (updateData.endDate && typeof updateData.endDate === 'string') {
+        updateData.endDate = new Date(updateData.endDate);
+      }
+
+      repository.merge(event, updateData);
+      return await repository.save(event);
+    }
   /**
    * Buscar todos os eventos com filtros opcionais
    */

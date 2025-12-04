@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import ExamService from '../services/ExamService';
 
+
+import { Exam } from '../entities/Exam';
+import { AppDataSource } from '../config/data-source';
+
 class ExamController {
     public static async uploadTable(req: Request, res: Response): Promise<Response> {
         try {
@@ -29,6 +33,26 @@ class ExamController {
             return res.status(200).json(exams);
         } catch (error: any) {
             return res.status(500).json({ message: error.message });
+        }
+    }
+
+    public static async update(req: Request, res: Response): Promise<Response> {
+        try {
+            const { id } = req.params;
+            const updateData = req.body;
+            const examRepository = AppDataSource.getRepository(Exam);
+
+            const exam = await examRepository.findOneBy({ id: Number(id) });
+            if (!exam) {
+                return res.status(404).json({ success: false, message: 'Prova não encontrada.' });
+            }
+
+            examRepository.merge(exam, updateData);
+            const updatedExam = await examRepository.save(exam);
+
+            return res.status(200).json({ success: true, data: updatedExam });
+        } catch (error: any) {
+            return res.status(400).json({ success: false, message: error.message });
         }
     }
 }
