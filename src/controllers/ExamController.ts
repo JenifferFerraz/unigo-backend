@@ -55,6 +55,24 @@ class ExamController {
             return res.status(400).json({ success: false, message: error.message });
         }
     }
+
+    public static async delete(req: Request, res: Response): Promise<Response> {
+        try {
+            const { id } = req.params;
+            const examRepository = AppDataSource.getRepository(Exam);
+
+            const exam = await examRepository.findOneBy({ id: Number(id) });
+            if (!exam) {
+                return res.status(404).json({ success: false, message: 'Prova não encontrada.' });
+            }
+
+            await examRepository.remove(exam);
+
+            return res.status(200).json({ success: true, message: 'Prova deletada com sucesso.' });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+    }
 }
 
 export default ExamController;

@@ -9,5 +9,7 @@ examRoutes.get('/', ExamController.findAll.bind(ExamController));
 examRoutes.post('/upload-tabela', multer().single('file'), ExamController.uploadTable.bind(ExamController));
 examRoutes.put('/:id', TokenNode.authorize.bind(TokenNode),
     TokenNode.isAdmin.bind(TokenNode), ExamController.update.bind(ExamController));
+examRoutes.delete('/:id', TokenNode.authorize.bind(TokenNode),
+    TokenNode.isAdmin.bind(TokenNode), ExamController.delete.bind(ExamController));
 
 export { examRoutes };
