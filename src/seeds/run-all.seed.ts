@@ -10,10 +10,7 @@ async function runSeeders() {
             'courses.seed.ts',
             'location.seed.ts',
             'user.seed.ts',
-            'course-locations.seed.ts',
-            'exams.seed.ts',
-            'seed-all-blocks.ts',
-            'seed-external-routes.ts',
+          
         ];
 
         for (const seeder of seeders) {
