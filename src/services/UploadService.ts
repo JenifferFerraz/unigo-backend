@@ -417,7 +417,9 @@ class UploadService {
 
         // Buscar curso pelo nome
         let courseEntity = undefined;
+        let courseId = undefined;
         let courseName = row.curso || row.nome_curso;
+        
         if (courseName) {
           const normalize = (str: string) => str
             .normalize('NFD')
@@ -429,8 +431,10 @@ class UploadService {
           const courseRepository = AppDataSource.getRepository(Course);
           const allCourses = await courseRepository.find();
           const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
+          
           if (foundCourse) {
             courseEntity = foundCourse;
+            courseId = foundCourse.id;
           }
         }
 
@@ -445,7 +449,8 @@ class UploadService {
         }
         
         const shiftValue = row.turno || '';
-        const truncatedShift = shiftValue.length > 20 ? shiftValue.substring(0, 20) : shiftValue;
+        const normalizedShift = shiftValue.toLowerCase().trim();
+        const truncatedShift = normalizedShift.length > 20 ? normalizedShift.substring(0, 20) : normalizedShift;
         
         if (dateString.length > 20) {
           throw new Error(`Data convertida excede limite de 20 caracteres: ${dateString}`);
@@ -460,7 +465,7 @@ class UploadService {
           }
         }
         
-        await examRepository.save({
+        const examData = {
           day: row.dia || '',
           date: dateString,
           subject: row.disciplina,
@@ -468,8 +473,11 @@ class UploadService {
           grade: gradeValue,
           shift: truncatedShift,
           cycle: cycleValue,
+          courseId: courseId,
           course: courseEntity,
-        });
+        };
+        
+        await examRepository.save(examData);
 
         result.successCount++;
       } catch (error: any) {

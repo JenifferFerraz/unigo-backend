@@ -29,7 +29,9 @@ class ExamController {
             const shift = (req.query.shift as string | undefined) ?? undefined;
             const month = req.query.month ? parseInt(req.query.month as string, 10) : undefined;
             const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
-            const exams = await ExamService.findAll(cycle, shift, month, year);
+            const courseIdQuery = req.query.courseId as string | undefined;
+            const courseId = courseIdQuery ? parseInt(courseIdQuery, 10) : undefined;
+            const exams = await ExamService.findAll(cycle, shift, month, year, courseId);
             return res.status(200).json(exams);
         } catch (error: any) {
             return res.status(500).json({ message: error.message });

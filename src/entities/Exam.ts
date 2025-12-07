@@ -30,5 +30,8 @@ export class Exam {
     @Column({ type: 'int', nullable: true })
     courseId?: number;
 
+    @ManyToOne(() => Course, { nullable: true })
+    course?: Course;
+
 }
 

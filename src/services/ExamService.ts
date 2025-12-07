@@ -171,19 +171,24 @@ class ExamService {
             return { success: false, message: err.message };
         }
     }
-    public async findAll(cycle?: number, shift?: string, month?: number, year?: number): Promise<Exam[]> {
+    public async findAll(cycle?: number, shift?: string, month?: number, year?: number, courseId?: number): Promise<Exam[]> {
         const repo = AppDataSource.getRepository(Exam);
-        let exams = await repo.find();
+        let exams = await repo.find({ relations: ['course'] });
+        
+        if (courseId) {
+            exams = exams.filter(e => e.courseId === courseId);
+        }
+        
         if (typeof cycle === 'number') {
             exams = exams.filter(e => e.cycle === cycle);
         }
         if (shift) {
-            exams = exams.filter(e => e.shift === shift);
+            const normalizedShift = shift.toLowerCase().trim();
+            exams = exams.filter(e => e.shift && e.shift.toLowerCase().trim() === normalizedShift);
         }
         if (month && year) {
             exams = exams.filter(e => {
                 if (!e.date) return false;
-                // espera formato dd/MM/yyyy
                 const parts = e.date.split('/');
                 if (parts.length < 3) return false;
                 const examMonth = parseInt(parts[1], 10);
