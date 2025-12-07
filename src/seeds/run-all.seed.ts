@@ -7,10 +7,9 @@ async function runSeeders() {
     try {
 
         const seeders = [
-            'courses.seed.ts',
-            'location.seed.ts',
-            'user.seed.ts',
-          
+            'course-locations.seed.ts',
+            'exams.seed.ts',
+         
         ];
 
         for (const seeder of seeders) {
