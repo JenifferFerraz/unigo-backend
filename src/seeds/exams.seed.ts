@@ -7,7 +7,6 @@ async function run() {
         const repo = AppDataSource.getRepository(Exam);
 
         const exams = [
-            // --- SEGUNDA-FEIRA (27/10/2025) - NOTURNO ---
             { day: 'SEGUNDA-FEIRA', date: '27/10/2025', subject: '14275 - Arquitetura e Organização de Computadores', time: '19:00 - 20:00', grade: '1º', cycle: 1, shift: 'noturno' },
             { day: 'SEGUNDA-FEIRA', date: '27/10/2025', subject: '14281 - Inovação em Tecnologia da Informação', time: '19:00 - 20:00', grade: '2º', cycle: 1, shift: 'noturno' },
             { day: 'SEGUNDA-FEIRA', date: '27/10/2025', subject: '11294 - Qualidade de Software', time: '19:00 - 20:00', grade: '6º', cycle: 1, shift: 'noturno' },
@@ -18,7 +17,6 @@ async function run() {
             { day: 'SEGUNDA-FEIRA', date: '27/10/2025', subject: '14271 - Engenharia de Software', time: '21:30 - 22:30', grade: '1º', cycle: 1, shift: 'noturno' },
             { day: 'SEGUNDA-FEIRA', date: '27/10/2025', subject: '111471 - Governança de Tecnologia da Informação', time: '21:30 - 22:30', grade: '5º', cycle: 1, shift: 'noturno' },
 
-            // --- TERÇA-FEIRA (28/10/2025) - NOTURNO ---
             { day: 'TERÇA-FEIRA', date: '28/10/2025', subject: '111473 - Processamento Digital', time: '19:00 - 20:00', grade: '6º', cycle: 1, shift: 'noturno' },
             { day: 'TERÇA-FEIRA', date: '28/10/2025', subject: '11302 - Segurança da Informação', time: '19:00 - 20:00', grade: '8º', cycle: 1, shift: 'noturno' },
             { day: 'TERÇA-FEIRA', date: '28/10/2025', subject: '14280 - Algoritmos e Programação', time: '19:00 - 20:00', grade: '2º', cycle: 1, shift: 'noturno' },
