@@ -4,6 +4,7 @@ import { Schedule } from '../entities/Schedule';
 import { Event } from '../entities/Event';
 import { AcademicCalendar } from '../entities/AcademicCalendar';
 import { Exam } from '../entities/Exam';
+import { Course } from '../entities/Course';
 import { ScheduleRow, UploadResult } from '../dto/Schedule';
 import { EventRow } from '../dto/Event';
 import { CalendarRow } from '../dto/AcademicCalendar';
@@ -425,7 +426,7 @@ class UploadService {
             .trim()
             .toLowerCase();
           const normalizedCourseName = normalize(courseName);
-          const courseRepository = AppDataSource.getRepository('Course');
+          const courseRepository = AppDataSource.getRepository(Course);
           const allCourses = await courseRepository.find();
           const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
           if (foundCourse) {
@@ -435,11 +436,12 @@ class UploadService {
 
         const examRepository = AppDataSource.getRepository(Exam);
         
-        // Extrai o período do campo disciplina se estiver no formato "14275 - NOME (1º)"
+        // Extrai o período do campo disciplina 
+        // Suporta: (1º), (2º/3º/6º), (3º / 4º), etc
         let gradeValue = null;
-        const subjectMatch = row.disciplina.match(/\((\d+º)\)$/);
+        const subjectMatch = row.disciplina.match(/\(([^\)]+)\)$/);
         if (subjectMatch) {
-          gradeValue = subjectMatch[1];
+          gradeValue = subjectMatch[1].trim();
         }
         
         const shiftValue = row.turno || '';
