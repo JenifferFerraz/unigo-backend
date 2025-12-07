@@ -75,11 +75,41 @@ export class UnifiedRouteService {
     let totalDistance = 0;
     const floorsTraversed: number[] = [];
 
-    let nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
+    // 🎯 NOVA ESTRATÉGIA: Descobrir qual escada será usada ANTES de escolher a porta
+    let targetStairPosition: number[] | undefined = undefined;
+    
+    // Se destino está em andar diferente, descobrir qual escada será usada
+    if (destinationFloor !== 0) {
+      const tempDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
+      if (tempDoor) {
+        const stairConnections = await this.mapAllFloorConnections(structureId);
+        if (stairConnections.length > 0) {
+          const floorPath = this.findBestFloorPath(tempDoor.floor, destinationFloor, stairConnections);
+          if (floorPath && floorPath.length > 1) {
+            const firstStair = this.findBestConnection(
+              floorPath[0],
+              floorPath[1],
+              tempDoor.coordinates,
+              stairConnections
+            );
+            if (firstStair) {
+              targetStairPosition = firstStair.pointOnFloorA;
+            }
+          }
+        }
+      }
+    }
+
+    let nearestDoor = await this.findNearestStructureDoor(
+      structureId, 
+      userPosition, 
+      targetStairPosition, // passa a posição da escada como referência
+      true
+    );
 
     if (!nearestDoor) {
       console.warn('⚠️ Nenhuma entrada principal encontrada, buscando porta secundária...');
-      nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, false);
+      nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, targetStairPosition, false);
     }
 
     if (!nearestDoor) {
@@ -291,8 +321,8 @@ export class UnifiedRouteService {
 
   private async findNearestStructureDoor(
     structureId: number,
-    position: number[],
-    floor?: number,
+    userPosition: number[],
+    targetPosition?: number[], // 🎯 NOVO: posição da escada alvo
     mainEntranceOnly: boolean = false
   ): Promise<{ coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null> {
 
@@ -301,10 +331,7 @@ export class UnifiedRouteService {
       structure: { id: structureId }
     };
 
-    if (floor !== undefined) {
-      whereClause.floor = floor;
-    }
-
+    // Não filtrar por andar - queremos ver todas as portas
     const doorRoutes = await this.internalRouteRepo.find({
       where: whereClause
     });
@@ -313,7 +340,8 @@ export class UnifiedRouteService {
   
     const doorsByFloor = new Map<number, Array<{
       coordinates: number[];
-      distance: number;
+      distanceToUser: number;
+      distanceToTarget: number;
       isMainEntrance: boolean;
       route: any;
     }>>();
@@ -325,7 +353,10 @@ export class UnifiedRouteService {
       if (!route.properties?.isDoor) continue;
       if (!route.geometry?.coordinates) continue;
 
-      const isMainEntrance = route.properties['In/Out'] === true;
+      // 🔧 CORRIGIDO: Aceitar tanto "In/Out" quanto ausência da propriedade
+      // Se não tem "In/Out", considera como entrada válida (caso do Bloco H)
+      const isMainEntrance = route.properties['In/Out'] === true || 
+                            route.properties['In/Out'] === undefined;
 
       if (isMainEntrance) mainEntranceCount++;
       else secondaryDoorCount++;
@@ -336,7 +367,8 @@ export class UnifiedRouteService {
 
       for (const line of lines) {
         for (const point of line) {
-          const distance = haversine(position, point);
+          const distToUser = haversine(userPosition, point);
+          const distToTarget = targetPosition ? haversine(targetPosition, point) : distToUser;
 
           if (!doorsByFloor.has(route.floor)) {
             doorsByFloor.set(route.floor, []);
@@ -344,7 +376,8 @@ export class UnifiedRouteService {
 
           doorsByFloor.get(route.floor)!.push({
             coordinates: point,
-            distance,
+            distanceToUser: distToUser,
+            distanceToTarget: distToTarget,
             isMainEntrance,
             route
           });
@@ -352,28 +385,30 @@ export class UnifiedRouteService {
       }
     }
 
+    const sortKey = targetPosition ? 'distanceToTarget' : 'distanceToUser';
+
+
     if (doorsByFloor.has(0)) {
 
       const groundDoors = doorsByFloor.get(0)!;
 
       const mainEntrances = groundDoors.filter(d => d.isMainEntrance);
       if (mainEntrances.length > 0) {
-        const nearest = mainEntrances.sort((a, b) => a.distance - b.distance)[0];
+        const nearest = mainEntrances.sort((a, b) => a[sortKey] - b[sortKey])[0];
         return {
           coordinates: nearest.coordinates,
           floor: 0,
-          distance: nearest.distance,
+          distance: nearest.distanceToUser,
           isMainEntrance: true
         };
       }
 
-      // Se não houver entrada principal, usar qualquer porta do térreo
       if (!mainEntranceOnly && groundDoors.length > 0) {
-        const nearest = groundDoors.sort((a, b) => a.distance - b.distance)[0];
+        const nearest = groundDoors.sort((a, b) => a[sortKey] - b[sortKey])[0];
         return {
           coordinates: nearest.coordinates,
           floor: 0,
-          distance: nearest.distance,
+          distance: nearest.distanceToUser,
           isMainEntrance: false
         };
       }
@@ -386,22 +421,21 @@ export class UnifiedRouteService {
 
       const mainEntrances = doorsOnFloor.filter(d => d.isMainEntrance);
       if (mainEntrances.length > 0) {
-        const nearest = mainEntrances.sort((a, b) => a.distance - b.distance)[0];
+        const nearest = mainEntrances.sort((a, b) => a[sortKey] - b[sortKey])[0];
         return {
           coordinates: nearest.coordinates,
           floor: currentFloor,
-          distance: nearest.distance,
+          distance: nearest.distanceToUser,
           isMainEntrance: true
         };
       }
 
-      // Se não for obrigatório entrada principal, usar qualquer porta
       if (!mainEntranceOnly && doorsOnFloor.length > 0) {
-        const nearest = doorsOnFloor.sort((a, b) => a.distance - b.distance)[0];
+        const nearest = doorsOnFloor.sort((a, b) => a[sortKey] - b[sortKey])[0];
         return {
           coordinates: nearest.coordinates,
           floor: currentFloor,
-          distance: nearest.distance,
+          distance: nearest.distanceToUser,
           isMainEntrance: false
         };
       }
@@ -590,10 +624,17 @@ export class UnifiedRouteService {
     const structure = await this.structureRepo.findOne({ where: { id: structureId } });
     let blocoDestino = "";
     if (structure && structure.description) {
-      const match = String(structure.description).trim().match(/([A-Za-z0-9]+)$/);
-      if (match) blocoDestino = match[1].toUpperCase();
+      // Extrair código do bloco (ex: "B2" de "Estrutura do B2 ESTRUTURA")
+      // Procura por padrão: letra(s) seguida(s) de número(s)
+      const match = String(structure.description).trim().match(/\b([A-Z]+\d+)\b/);
+      if (match) {
+        blocoDestino = match[1].toUpperCase();
+      } else {
+        // Fallback: última palavra
+        const fallbackMatch = String(structure.description).trim().match(/([A-Za-z0-9]+)$/);
+        if (fallbackMatch) blocoDestino = fallbackMatch[1].toUpperCase();
+      }
     }
-
 
     const stairsByFloor = new Map<number, number[][]>();
     const doorsByFloor = new Map<number, number[][]>();
@@ -643,16 +684,19 @@ export class UnifiedRouteService {
 
         let aceitaConexao = false;
         if (blocoDestino && connectsFrom && connectsTo) {
-          const fromOk = String(connectsFrom).toUpperCase().startsWith(blocoDestino);
-          const toOk = String(connectsTo).toUpperCase().startsWith(blocoDestino);
-          if (fromOk && toOk) {
+          const fromStr = String(connectsFrom).toUpperCase();
+          const toStr = String(connectsTo).toUpperCase();
+          
+       
+          const fromMatches = fromStr.includes(blocoDestino) || blocoDestino.includes(fromStr);
+          const toMatches = toStr.includes(blocoDestino) || blocoDestino.includes(toStr);
+     
+          
+          if (fromMatches || toMatches) {
             aceitaConexao = true;
           }
         }
 
-        if (!aceitaConexao) {
-          continue;
-        }
 
         if (typeof fromFloor === 'number' && typeof toFloor === 'number' && fromFloor !== toFloor) {
           const key = `${Math.min(fromFloor, toFloor)}-${Math.max(fromFloor, toFloor)}`;
@@ -683,10 +727,8 @@ export class UnifiedRouteService {
 
     const connections: StairConnection[] = [];
 
-
     for (const [key, { fromFloor, toFloor, points }] of passagesByConnection) {
       if (points.length < 2) {
-        console.warn(`⚠️ Passarela ${key} sem pontos suficientes`);
         continue;
       }
 
@@ -705,7 +747,7 @@ export class UnifiedRouteService {
       ...doorsByFloor.keys()
     ])).sort((a, b) => a - b);
 
-    const STAIR_TOLERANCE = 60; 
+    const STAIR_TOLERANCE = 10; 
 
     for (let i = 0; i < allFloors.length; i++) {
       for (let j = i + 1; j < allFloors.length; j++) {
@@ -741,7 +783,6 @@ export class UnifiedRouteService {
                 type: 'stairs'
               });
               connectionsFound++;
-
             }
           }
         }
@@ -1115,64 +1156,30 @@ export class UnifiedRouteService {
 
     if (validConnections.length === 0) return null;
 
+    let bestConnection: StairConnection | null = null;
+    let minDistance = Infinity;
 
-    const stairConnections = validConnections.filter(c => c.type === 'stairs');
+    for (const conn of validConnections) {
+   
+      const pointOnOriginFloor = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
+      const distance = haversine(currentPoint, pointOnOriginFloor);
 
-    if (stairConnections.length > 0) {
 
-      let bestStair: StairConnection | null = null;
-      let minDistance = Infinity;
-
-      for (const conn of stairConnections) {
-        const pointToCheck = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
-        const distance = haversine(currentPoint, pointToCheck);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          bestStair = conn.floorA === floorA ? conn : {
-            floorA: conn.floorB,
-            floorB: conn.floorA,
-            pointOnFloorA: conn.pointOnFloorB,
-            pointOnFloorB: conn.pointOnFloorA,
-            distance: conn.distance,
-            type: conn.type
-          };
-        }
-      }
-
-      if (bestStair) {
-        return bestStair;
+      if (distance < minDistance) {
+        minDistance = distance;
+        bestConnection = conn.floorA === floorA ? conn : {
+          floorA: conn.floorB,
+          floorB: conn.floorA,
+          pointOnFloorA: conn.pointOnFloorB,
+          pointOnFloorB: conn.pointOnFloorA,
+          distance: conn.distance,
+          type: conn.type
+        };
       }
     }
 
-
-    const passageConnections = validConnections.filter(c => c.type === 'level_passage');
-
-    if (passageConnections.length > 0) {
-
-      let bestPassage: StairConnection | null = null;
-      let minDistance = Infinity;
-
-      for (const conn of passageConnections) {
-        const pointToCheck = conn.floorA === floorA ? conn.pointOnFloorA : conn.pointOnFloorB;
-        const distance = haversine(currentPoint, pointToCheck);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          bestPassage = conn.floorA === floorA ? conn : {
-            floorA: conn.floorB,
-            floorB: conn.floorA,
-            pointOnFloorA: conn.pointOnFloorB,
-            pointOnFloorB: conn.pointOnFloorA,
-            distance: conn.distance,
-            type: conn.type
-          };
-        }
-      }
-
-      if (bestPassage) {
-        return bestPassage;
-      }
+    if (bestConnection) {
+      return bestConnection;
     }
 
     console.error(`   ❌ Nenhuma conexão disponível!`);

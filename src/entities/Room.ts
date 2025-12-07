@@ -37,4 +37,7 @@ export class Room {
 
     @Column({ type: 'int', nullable: true })
     floor?: number;
+
+    @Column({ type: 'boolean', default: true })
+    isSearchable: boolean;
 }

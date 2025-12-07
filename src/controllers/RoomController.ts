@@ -10,9 +10,10 @@ export class RoomController {
         if (q) {
             rooms = await repo.createQueryBuilder('room')
                 .where('LOWER(room.name) LIKE :q', { q: `%${q}%` })
+                .andWhere('room.isSearchable = :isSearchable', { isSearchable: true })
                 .getMany();
         } else {
-            rooms = await repo.find();
+            rooms = await repo.find({ where: { isSearchable: true } });
         }
         res.json(rooms);
     }
