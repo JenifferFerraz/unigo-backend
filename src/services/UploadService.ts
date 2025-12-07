@@ -414,12 +414,33 @@ class UploadService {
           throw new Error(`Formato de data inválido na linha ${rowNumber}: ${dateError.message}`);
         }
 
+        // Buscar curso pelo nome
+        let courseEntity = undefined;
+        let courseName = row.curso || row.nome_curso;
+        if (courseName) {
+          const normalize = (str: string) => str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+          const normalizedCourseName = normalize(courseName);
+          const courseRepository = AppDataSource.getRepository('Course');
+          const allCourses = await courseRepository.find();
+          const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
+          if (foundCourse) {
+            courseEntity = foundCourse;
+          }
+        }
 
         const examRepository = AppDataSource.getRepository(Exam);
         
-
-        const gradeValue = row.curso || row.nome_curso || null;
-        const truncatedGrade = gradeValue && gradeValue.length > 100 ? gradeValue.substring(0, 100) : gradeValue;
+        // Extrai o período do campo disciplina se estiver no formato "14275 - NOME (1º)"
+        let gradeValue = null;
+        const subjectMatch = row.disciplina.match(/\((\d+º)\)$/);
+        if (subjectMatch) {
+          gradeValue = subjectMatch[1];
+        }
         
         const shiftValue = row.turno || '';
         const truncatedShift = shiftValue.length > 20 ? shiftValue.substring(0, 20) : shiftValue;
@@ -428,14 +449,24 @@ class UploadService {
           throw new Error(`Data convertida excede limite de 20 caracteres: ${dateString}`);
         }
         
+        // Extrai o ciclo da string "Ciclo 1" para o número 1
+        let cycleValue = 1;
+        if (row.ciclo) {
+          const cycleMatch = String(row.ciclo).match(/\d+/);
+          if (cycleMatch) {
+            cycleValue = parseInt(cycleMatch[0], 10);
+          }
+        }
+        
         await examRepository.save({
           day: row.dia || '',
           date: dateString,
           subject: row.disciplina,
           time: row.horario,
-          grade: truncatedGrade,
+          grade: gradeValue,
           shift: truncatedShift,
-          cycle: row.ciclo || 1,
+          cycle: cycleValue,
+          course: courseEntity,
         });
 
         result.successCount++;

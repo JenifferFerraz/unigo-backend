@@ -27,7 +27,8 @@ export class Exam {
     @Column({ type: 'int', default: 1 })
     cycle!: number;
 
-    @ManyToOne(() => Course, { nullable: true })
-    course?: Course;
+    @Column({ type: 'int', nullable: true })
+    courseId?: number;
+
 }
 

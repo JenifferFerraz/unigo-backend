@@ -11,5 +11,5 @@ export interface ExamRow {
   nome_curso?: string; 
   turno?: string;
   ciclo?: number;
-  course?: Course;
+  courseId?: number;
 }
