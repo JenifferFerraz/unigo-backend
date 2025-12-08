@@ -19,6 +19,12 @@ class AuthService {
             return null;
         }
         
+        console.log('SMTP Configuration:', {
+            service: process.env.SMTP_SERVICE,
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS ? '***configured***' : 'not set'
+        });
+        
         return nodemailer.createTransport({
             service: process.env.SMTP_SERVICE,
             auth: {
