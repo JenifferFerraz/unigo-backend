@@ -10,7 +10,7 @@ import * as path from 'path';
 class AuthService {
     //** - Repositório de usuários */
     private static userRepository = AppDataSource.getRepository(User);
-    
+
     //** - Cria o transporter de email apenas se as credenciais estiverem configuradas */
     private static getTransporter() {
 
@@ -18,15 +18,11 @@ class AuthService {
             console.error('SMTP credentials are not configured');
             return null;
         }
-        
-        console.log('SMTP Configuration:', {
-            service: process.env.SMTP_SERVICE,
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS ? '***configured***' : 'not set'
-        });
-        
+
         return nodemailer.createTransport({
-            service: process.env.SMTP_SERVICE,
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: Number(process.env.SMTP_PORT) === 465,
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS
@@ -46,29 +42,29 @@ class AuthService {
     //** - Realiza o login do usuário */
     public static async login(data: LoginDTO): Promise<any> {
         const user = await this.userRepository.findOne({
-            where: { 
+            where: {
                 email: data.email,
-                isDeleted: false 
+                isDeleted: false
             },
             relations: ['studentProfile', 'course']
         });
-        
+
         if (!user) {
             throw new Error('Invalid credentials');
         }
-    
+
         const validPassword = await bcrypt.compare(data.password, user.password);
-        
+
         if (!validPassword) {
             throw new Error('Invalid credentials');
         }
-    
+
         const token = this.generateToken(user.email);
         const refreshToken = await this.generateRefreshToken(user.email);
-    
+
         user.refreshToken = refreshToken;
         await this.userRepository.save(user);
-    
+
         const { password, ...userData } = user;
 
         let studentProfile = null;
@@ -94,7 +90,7 @@ class AuthService {
     //** - Gera um token JWT para o usuário */
     private static generateToken(email: string): string {
         return sign(
-            { email }, 
+            { email },
             process.env.JWT_SECRET || 'default_secret',
             { expiresIn: '15m' }
         );
@@ -115,11 +111,11 @@ class AuthService {
             where: { email },
             relations: ['studentProfile', 'course']
         });
-        
+
         if (!user) {
             throw new Error('User not found');
         }
-        
+
         const { password, refreshToken, ...userData } = user;
         return userData;
     }
@@ -133,7 +129,7 @@ class AuthService {
             where: { email }
         });
     }
-    
+
     //** - Valida os dados para redefinição de senha */
     public static validatePasswordReset(req: Request): void {
         if (!req.body.email) {
@@ -160,7 +156,7 @@ class AuthService {
         await this.userRepository.save(user);
 
         const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-        
+
         const transporter = this.getTransporter();
         if (transporter) {
             try {
@@ -170,7 +166,7 @@ class AuthService {
                     subject: 'Redefinição de Senha - UniGo',
                     attachments: [{
                         filename: 'Logo.png',
-                            path: path.join(__dirname, '../assets/Logo.png'),
+                        path: path.join(__dirname, '../assets/Logo.png'),
                         cid: 'logo'
                     }],
                     html: `
@@ -284,18 +280,18 @@ class AuthService {
     //** - Valida os dados para aceitação dos termos */
     public static async acceptTerms(userId: number): Promise<void> {
         const user = await this.userRepository.findOne({
-            where: { 
+            where: {
                 id: userId,
                 isDeleted: false
             }
         });
-    
+
         if (!user) {
             throw new Error('User not found');
         }
-    
+
         user.termsAccepted = true;
-        
+
         await this.userRepository.save(user);
     }
 }
