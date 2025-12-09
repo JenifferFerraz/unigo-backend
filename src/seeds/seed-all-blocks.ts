@@ -324,65 +324,49 @@ async function seedAllBlocks() {
 
                     const geometryType = feature.geometry?.type;
 
-                    // Ignorar Points completamente - só processar Polygons
-                    if (geometryType !== 'Polygon') {
+                    if (!featuresByName.has(roomName)) {
+                        featuresByName.set(roomName, feature);
                         continue;
                     }
 
-                    // Criar chave única usando nome + coordenadas do centroid
-                    let uniqueKey = roomName;
-                    if (Array.isArray(feature.geometry.coordinates[0])) {
-                        const coords = feature.geometry.coordinates[0];
-                        const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
-                        uniqueKey = `${roomName}_${centroid[0].toFixed(7)}_${centroid[1].toFixed(7)}`;
-                    }
+                    const existingFeature = featuresByName.get(roomName);
+                    const existingType = existingFeature.geometry?.type;
 
-                    featuresByName.set(uniqueKey, feature);
+                    if (geometryType === 'Polygon' && existingType === 'Point') {
+                        featuresByName.set(roomName, feature);
+                    }
                 }
 
 
-                for (const [uniqueKey, feature] of featuresByName.entries()) {
-                    // Extrair o nome real da sala (sem as coordenadas da chave)
-                    const roomName = feature?.properties?.name?.trim().toUpperCase() || '';
-                    
-                    // Calcular centroid do Polygon
-                    if (!feature.geometry || feature.geometry.type !== 'Polygon' || !Array.isArray(feature.geometry.coordinates[0])) {
-                        console.error(`   ❌ ${roomName} sem geometria Polygon válida!`);
+                for (const [roomName, feature] of featuresByName.entries()) {
+                    let centroidGeo = null;
+
+                    if (feature.geometry && feature.geometry.type === 'Polygon' && Array.isArray(feature.geometry.coordinates[0])) {
+                        const coords = feature.geometry.coordinates[0];
+                        const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
+                        centroidGeo = { type: 'Point', coordinates: centroid };
+                    } else if (feature.geometry && feature.geometry.type === 'Point') {
+                        centroidGeo = { type: 'Point', coordinates: feature.geometry.coordinates };
+                    }
+
+                    if (!feature.geometry) {
+                        console.error(`   ❌ ${roomName} sem geometria!`);
                         continue;
                     }
 
-                    const coords = feature.geometry.coordinates[0];
-                    const centroid = coords.reduce((acc, cur) => [acc[0] + cur[0], acc[1] + cur[1]], [0, 0]).map(x => x / coords.length);
-                    const centroidGeo = { type: 'Point', coordinates: centroid };
+                    if (!centroidGeo) {
+                        console.error(`   ❌ ${roomName} sem centroid!`);
+                        continue;
+                    }
 
                     try {
-                        // Buscar salas com mesmo nome, estrutura e andar
-                        const existingRooms = await roomRepo.find({
+                        const existingRoom = await roomRepo.findOne({
                             where: {
                                 name: roomName,
                                 structure: { id: estruturaId },
                                 floor: andar
                             }
                         });
-
-                        // Verificar se já existe uma sala nessa localização (dentro de 0.00001 graus ~1 metro)
-                        const DISTANCE_THRESHOLD = 0.00001;
-                        const centroidCoords = centroidGeo.coordinates;
-                        
-                        let existingRoom = null;
-                        for (const room of existingRooms) {
-                            const roomCentroid = room.centroid as any;
-                            if (roomCentroid && roomCentroid.coordinates) {
-                                const dist = Math.sqrt(
-                                    Math.pow(roomCentroid.coordinates[0] - centroidCoords[0], 2) +
-                                    Math.pow(roomCentroid.coordinates[1] - centroidCoords[1], 2)
-                                );
-                                if (dist < DISTANCE_THRESHOLD) {
-                                    existingRoom = room;
-                                    break;
-                                }
-                            }
-                        }
 
                         if (!existingRoom) {
                             await AppDataSource.query(
@@ -397,6 +381,24 @@ async function seedAllBlocks() {
                                     andar
                                 ]
                             );
+                        } else {
+                            const existingGeometry = existingRoom.geometry;
+                            const existingType = existingGeometry?.type;
+                            const newType = feature.geometry.type;
+
+                            if (newType === 'Polygon' && existingType === 'Point') {
+                                await AppDataSource.query(
+                                    `UPDATE room 
+                                     SET geometry = ST_SetSRID(ST_GeomFromGeoJSON($1),4326),
+                                         centroid = ST_SetSRID(ST_GeomFromGeoJSON($2),4326)
+                                     WHERE id = $3`,
+                                    [
+                                        JSON.stringify(feature.geometry),
+                                        JSON.stringify(centroidGeo),
+                                        existingRoom.id
+                                    ]
+                                );
+                            }
                         }
                     } catch (err) {
                         console.error(`   ❌ Erro ao processar ${roomName}:`, err);
