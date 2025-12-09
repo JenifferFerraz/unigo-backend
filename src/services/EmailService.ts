@@ -1,27 +1,19 @@
-import { Resend } from 'resend';
+import * as SibApiV3Sdk from '@getbrevo/brevo';
 import * as path from 'path';
 import * as fs from 'fs';
 
 class EmailService {
-    private static resend: Resend | null = null;
-
-    //** - Inicializa o cliente Resend */
-    private static getClient(): Resend | null {
-        console.log('🔧 Configurando cliente de email Resend...');
-        console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***configurado***' : 'não configurado');
-        console.log('EMAIL_FROM:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
-
-        if (!process.env.RESEND_API_KEY) {
-            console.error('❌ RESEND_API_KEY não configurada');
+    //** - Inicializa o cliente Brevo */
+    private static getClient(): SibApiV3Sdk.TransactionalEmailsApi | null {
+        if (!process.env.BREVO_API_KEY) {
+            console.error('❌ BREVO_API_KEY não configurada');
             return null;
         }
 
-        if (!this.resend) {
-            console.log('✅ Criando cliente Resend...');
-            this.resend = new Resend(process.env.RESEND_API_KEY);
-        }
-
-        return this.resend;
+        const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+        apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+        
+        return apiInstance;
     }
 
     //** - Converte imagem para base64 para anexar no email */
@@ -51,21 +43,21 @@ class EmailService {
             return false;
         }
 
-        console.log('📧 Preparando para enviar email...');
-        console.log('De:', process.env.EMAIL_FROM || 'onboarding@resend.dev');
-        console.log('Para:', email);
-
         try {
             const logoBase64 = this.getLogoBase64();
             const logoSrc = logoBase64 
                 ? `data:image/png;base64,${logoBase64}`
                 : 'https://via.placeholder.com/120x120?text=UniGo';
 
-            const { data, error } = await client.emails.send({
-                from: process.env.EMAIL_FROM || 'UniGo <onboarding@resend.dev>',
-                to: email,
-                subject: 'Redefinição de Senha - UniGo',
-                html: `
+            const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+            
+            sendSmtpEmail.sender = { 
+                email: process.env.EMAIL_FROM || 'contato.unigo@gmail.com',
+                name: 'UniGo'
+            };
+            sendSmtpEmail.to = [{ email: email }];
+            sendSmtpEmail.subject = 'Redefinição de Senha - UniGo';
+            sendSmtpEmail.htmlContent = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -144,22 +136,13 @@ class EmailService {
     </table>
 </body>
 </html>
-`,
-            });
+`;
 
-            if (error) {
-                console.error('❌ Erro ao enviar email:', error);
-                return false;
-            }
-
-            console.log('✅ Email enviado com sucesso!');
-            console.log('Email ID:', data?.id);
+            const data = await client.sendTransacEmail(sendSmtpEmail);
             return true;
 
         } catch (error: any) {
-            console.error('❌ Erro ao enviar email de redefinição de senha');
-            console.error('Erro:', error.message);
-            console.error('Stack:', error.stack);
+            console.error('❌ Erro ao enviar email:', error.message);
             
             if (process.env.NODE_ENV === 'development') {
                 console.log('Link de reset (desenvolvimento):', resetLink);
