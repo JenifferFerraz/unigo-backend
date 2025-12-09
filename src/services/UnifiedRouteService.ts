@@ -75,81 +75,107 @@ export class UnifiedRouteService {
     let totalDistance = 0;
     const floorsTraversed: number[] = [];
 
-    // 🎯 NOVA ESTRATÉGIA: Descobrir qual escada será usada ANTES de escolher a porta
-    let targetStairPosition: number[] | undefined = undefined;
-    
-    // Se destino está em andar diferente, descobrir qual escada será usada
-    if (destinationFloor !== 0) {
-      const tempDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
-      if (tempDoor) {
-        const stairConnections = await this.mapAllFloorConnections(structureId);
-        if (stairConnections.length > 0) {
-          const floorPath = this.findBestFloorPath(tempDoor.floor, destinationFloor, stairConnections);
-          if (floorPath && floorPath.length > 1) {
-            const firstStair = this.findBestConnection(
-              floorPath[0],
-              floorPath[1],
-              tempDoor.coordinates,
-              stairConnections
-            );
-            if (firstStair) {
-              targetStairPosition = firstStair.pointOnFloorA;
-            }
-          }
+    const structure = await this.structureRepo.findOne({
+      where: { id: structureId }
+    });
+
+    let isUserInsideStructure = false;
+    let userFloor = 0; 
+
+    if (structure?.geometry) {
+      isUserInsideStructure = this.isPointInStructure(userPosition, structure.geometry);
+      if (isUserInsideStructure) {
+        console.log('✅ Usuário já está dentro da estrutura');
+        const distanceToDestination = haversine(userPosition, destinationCoords);
+        if (distanceToDestination < 100) { 
+          userFloor = destinationFloor;
         }
       }
     }
 
-    let nearestDoor = await this.findNearestStructureDoor(
-      structureId, 
-      userPosition, 
-      targetStairPosition, // passa a posição da escada como referência
-      true
-    );
+    let entryPoint: number[];
+    let entryFloor: number;
+    let isMainEntrance = false;
 
-    if (!nearestDoor) {
-      console.warn('⚠️ Nenhuma entrada principal encontrada, buscando porta secundária...');
-      nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, targetStairPosition, false);
-    }
-
-    if (!nearestDoor) {
-      console.error('❌ Nenhuma entrada encontrada para a estrutura');
-      return null;
-    }
-
-    const entryPoint = nearestDoor.coordinates;
-    const entryFloor = nearestDoor.floor;
-    const isMainEntrance = nearestDoor.isMainEntrance;
-
-    const externalDistance = haversine(userPosition, entryPoint);
-
-    const externalPath = await this.calculateExternalRoute(
-      userPosition,
-      entryPoint,
-      mode
-    );
-
-    if (externalPath && externalPath.length > 0) {
-      const segmentDistance = this.calculatePathDistance(externalPath);
-      segments.push({
-        type: 'external',
-        mode,
-        path: externalPath,
-        distance: segmentDistance,
-        description: mode === 'driving'
-          ? `Dirigir até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${segmentDistance.toFixed(0)}m)`
-          : `Caminhar até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${segmentDistance.toFixed(0)}m)`
-      });
-      totalDistance += segmentDistance;
+    if (isUserInsideStructure) {
+      entryPoint = userPosition;
+      entryFloor = userFloor;
+      console.log(`📍 Calculando rota interna direta do andar ${userFloor}`);
     } else {
-      segments.push({
-        type: 'external',
-        mode,
-        path: [userPosition, entryPoint],
-        distance: externalDistance,
-        description: `Ir até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${externalDistance.toFixed(0)}m, linha reta)`
-      });
-      totalDistance += externalDistance;
+      let targetStairPosition: number[] | undefined = undefined;
+      
+      if (destinationFloor !== 0) {
+        const tempDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
+        if (tempDoor) {
+          const stairConnections = await this.mapAllFloorConnections(structureId);
+          if (stairConnections.length > 0) {
+            const floorPath = this.findBestFloorPath(tempDoor.floor, destinationFloor, stairConnections);
+            if (floorPath && floorPath.length > 1) {
+              const firstStair = this.findBestConnection(
+                floorPath[0],
+                floorPath[1],
+                tempDoor.coordinates,
+                stairConnections
+              );
+              if (firstStair) {
+                targetStairPosition = firstStair.pointOnFloorA;
+              }
+            }
+          }
+        }
+      }
+
+      let nearestDoor = await this.findNearestStructureDoor(
+        structureId, 
+        userPosition, 
+        targetStairPosition,
+        true
+      );
+
+      if (!nearestDoor) {
+        console.warn('⚠️ Nenhuma entrada principal encontrada, buscando porta secundária...');
+        nearestDoor = await this.findNearestStructureDoor(structureId, userPosition, targetStairPosition, false);
+      }
+
+      if (!nearestDoor) {
+        console.error('❌ Nenhuma entrada encontrada para a estrutura');
+        return null;
+      }
+
+      entryPoint = nearestDoor.coordinates;
+      entryFloor = nearestDoor.floor;
+      isMainEntrance = nearestDoor.isMainEntrance;
+
+      const externalDistance = haversine(userPosition, entryPoint);
+
+      const externalPath = await this.calculateExternalRoute(
+        userPosition,
+        entryPoint,
+        mode
+      );
+
+      if (externalPath && externalPath.length > 0) {
+        const segmentDistance = this.calculatePathDistance(externalPath);
+        segments.push({
+          type: 'external',
+          mode,
+          path: externalPath,
+          distance: segmentDistance,
+          description: mode === 'driving'
+            ? `Dirigir até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${segmentDistance.toFixed(0)}m)`
+            : `Caminhar até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${segmentDistance.toFixed(0)}m)`
+        });
+        totalDistance += segmentDistance;
+      } else {
+        segments.push({
+          type: 'external',
+          mode,
+          path: [userPosition, entryPoint],
+          distance: externalDistance,
+          description: `Ir até a ${isMainEntrance ? 'entrada principal' : 'porta'} (${externalDistance.toFixed(0)}m, linha reta)`
+        });
+        totalDistance += externalDistance;
+      }
     }
 
     const internalRouteResult = await this.calculateInternalRouteMultiFloor(
@@ -193,11 +219,6 @@ export class UnifiedRouteService {
       estimatedTime += segment.distance / speed;
     }
     estimatedTime = estimatedTime / 60;
-
-    const structure = await this.structureRepo.findOne({
-      where: { id: structureId }
-
-    });
 
     const allFloorsSet = new Set<number>([entryFloor, destinationFloor, ...floorsTraversed]);
     for (const segment of segments) {
@@ -322,7 +343,7 @@ export class UnifiedRouteService {
   private async findNearestStructureDoor(
     structureId: number,
     userPosition: number[],
-    targetPosition?: number[], // 🎯 NOVO: posição da escada alvo
+    targetPosition?: number[], 
     mainEntranceOnly: boolean = false
   ): Promise<{ coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null> {
 
@@ -331,7 +352,6 @@ export class UnifiedRouteService {
       structure: { id: structureId }
     };
 
-    // Não filtrar por andar - queremos ver todas as portas
     const doorRoutes = await this.internalRouteRepo.find({
       where: whereClause
     });
@@ -353,8 +373,7 @@ export class UnifiedRouteService {
       if (!route.properties?.isDoor) continue;
       if (!route.geometry?.coordinates) continue;
 
-      // 🔧 CORRIGIDO: Aceitar tanto "In/Out" quanto ausência da propriedade
-      // Se não tem "In/Out", considera como entrada válida (caso do Bloco H)
+      
       const isMainEntrance = route.properties['In/Out'] === true || 
                             route.properties['In/Out'] === undefined;
 
@@ -624,13 +643,12 @@ export class UnifiedRouteService {
     const structure = await this.structureRepo.findOne({ where: { id: structureId } });
     let blocoDestino = "";
     if (structure && structure.description) {
-      // Extrair código do bloco (ex: "B2" de "Estrutura do B2 ESTRUTURA")
-      // Procura por padrão: letra(s) seguida(s) de número(s)
+ 
       const match = String(structure.description).trim().match(/\b([A-Z]+\d+)\b/);
       if (match) {
         blocoDestino = match[1].toUpperCase();
       } else {
-        // Fallback: última palavra
+
         const fallbackMatch = String(structure.description).trim().match(/([A-Za-z0-9]+)$/);
         if (fallbackMatch) blocoDestino = fallbackMatch[1].toUpperCase();
       }
@@ -643,7 +661,7 @@ export class UnifiedRouteService {
 
     for (const route of allRoutes) {
       let points: number[][] = [];
-      const floor = route.floor;
+      const floor = (route as InternalRoute).floor || 0;
 
       if (route.geometry?.coordinates && route.geometry.coordinates.length > 0) {
         for (const line of route.geometry.coordinates) {
@@ -1035,7 +1053,6 @@ export class UnifiedRouteService {
 
     const graph = new Map<number, Array<{ floor: number; distance: number; type: 'stairs' | 'level_passage' }>>();
 
-    // Construir o grafo
     for (const conn of connections) {
       if (!graph.has(conn.floorA)) graph.set(conn.floorA, []);
       if (!graph.has(conn.floorB)) graph.set(conn.floorB, []);
@@ -1053,7 +1070,6 @@ export class UnifiedRouteService {
       });
     }
 
-    // Verificar se os andares estão no grafo
     if (!graph.has(startFloor) || !graph.has(endFloor)) {
       return null;
     }
@@ -1065,7 +1081,6 @@ export class UnifiedRouteService {
     const previous = new Map<number, number | null>();
     const unvisited = new Set<number>(graph.keys());
 
-    // Inicializar distâncias
     graph.forEach((_, floor) => {
       distances.set(floor, Infinity);
       previous.set(floor, null);
@@ -1074,7 +1089,6 @@ export class UnifiedRouteService {
     distances.set(startFloor, 0);
 
     while (unvisited.size > 0) {
-      // Encontrar o nó não visitado com menor distância
       let current: number | null = null;
       let minDist = Infinity;
 
@@ -1103,7 +1117,7 @@ export class UnifiedRouteService {
         // ============================================
         // NOVO: Aplicar peso menor para escadas (priorizar)
         // ============================================
-        const weightMultiplier = type === 'stairs' ? 1.0 : 3.0; // Passarelas têm peso 3x maior
+        const weightMultiplier = type === 'stairs' ? 1.0 : 3.0; 
         const weightedDistance = distance * weightMultiplier;
 
         const alt = distances.get(current)! + weightedDistance;
@@ -1115,7 +1129,6 @@ export class UnifiedRouteService {
       }
     }
 
-    // Reconstruir caminho
     const path: number[] = [];
     let current: number | null = endFloor;
     let iterations = 0;
@@ -1133,7 +1146,6 @@ export class UnifiedRouteService {
       iterations++;
     }
 
-    // Verificar se o caminho é válido
     if (path.length === 0 || path[0] !== startFloor || path[path.length - 1] !== endFloor) {
       return null;
     }
@@ -1501,5 +1513,43 @@ export class UnifiedRouteService {
     }
 
     return null;
+  }
+
+  private isPointInStructure(point: number[], geometry: any): boolean {
+    if (!geometry || !geometry.coordinates) return false;
+
+    let coords = geometry.coordinates;
+    
+    if (typeof coords === 'string') {
+      try {
+        coords = JSON.parse(coords);
+      } catch {
+        return false;
+      }
+    }
+
+    if (geometry.type === 'Polygon' && Array.isArray(coords) && coords.length > 0) {
+      const polygon = coords[0];
+      return this.pointInPolygon(point, polygon);
+    }
+
+    return false;
+  }
+
+  private pointInPolygon(point: number[], polygon: number[][]): boolean {
+    const [x, y] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+
+      const intersect = ((yi > y) !== (yj > y)) &&
+        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
   }
 }
