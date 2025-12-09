@@ -40,10 +40,17 @@ class AuthController {
   ): Promise<Response> {
     try {
       AuthService.validatePasswordReset(req);
-      await AuthService.requestPasswordReset(req.body.email);
+      const result = await AuthService.requestPasswordReset(req.body.email);
+      
+      if (result === false) {
+        return res.status(404).json({
+          message: "Este email não está cadastrado no sistema.",
+        });
+      }
+      
       return res.status(200).json({
         message:
-          "Se este email for cadastrado, verifique sua caixa de entrada para receber as instruções de redefinição de senha",
+          "Email enviado com sucesso! Verifique sua caixa de entrada e também a pasta de spam.",
       });
     } catch (error: any) {
       return res.status(400).json({ message: error.message });

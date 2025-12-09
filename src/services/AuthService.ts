@@ -118,13 +118,13 @@ class AuthService {
         }
     }
     //** - Inicia o processo de redefinição de senha */
-    public static async requestPasswordReset(email: string): Promise<void> {
+    public static async requestPasswordReset(email: string): Promise<boolean> {
         const user = await this.userRepository.findOne({
             where: { email }
         });
 
         if (!user) {
-            throw new Error('Se um usuário com este email existir, ele receberá instruções de redefinição de senha');
+            return false;
         }
 
         const resetToken = sign(
@@ -140,6 +140,8 @@ class AuthService {
 
         // Envia email de forma assíncrona sem bloquear a resposta
         EmailService.sendPasswordResetEmail(email, resetLink).catch(() => {});
+        
+        return true;
     }
     //** - Completa o processo de redefinição de senha */
     public static async resetPassword(token: string, newPassword: string): Promise<void> {

@@ -1,19 +1,22 @@
-import * as SibApiV3Sdk from '@getbrevo/brevo';
+import { Resend } from 'resend';
 import * as path from 'path';
 import * as fs from 'fs';
 
 class EmailService {
-    //** - Inicializa o cliente Brevo */
-    private static getClient(): SibApiV3Sdk.TransactionalEmailsApi | null {
-        if (!process.env.BREVO_API_KEY) {
-            console.error('❌ BREVO_API_KEY não configurada');
+    private static resend: Resend | null = null;
+
+    //** - Inicializa o cliente Resend */
+    private static getClient(): Resend | null {
+        if (!process.env.RESEND_API_KEY) {
+            console.error('❌ RESEND_API_KEY não configurada');
             return null;
         }
 
-        const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-        apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-        
-        return apiInstance;
+        if (!this.resend) {
+            this.resend = new Resend(process.env.RESEND_API_KEY);
+        }
+
+        return this.resend;
     }
 
     //** - Converte imagem para base64 para anexar no email */
@@ -49,15 +52,11 @@ class EmailService {
                 ? `data:image/png;base64,${logoBase64}`
                 : 'https://via.placeholder.com/120x120?text=UniGo';
 
-            const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-            
-            sendSmtpEmail.sender = { 
-                email: process.env.EMAIL_FROM || 'contato.unigo@gmail.com',
-                name: 'UniGo'
-            };
-            sendSmtpEmail.to = [{ email: email }];
-            sendSmtpEmail.subject = 'Redefinição de Senha - UniGo';
-            sendSmtpEmail.htmlContent = `
+            const { data, error } = await client.emails.send({
+                from: 'UniGo <onboarding@resend.dev>',
+                to: email,
+                subject: 'Redefinição de Senha - UniGo',
+                html: `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -136,9 +135,14 @@ class EmailService {
     </table>
 </body>
 </html>
-`;
+`,
+            });
 
-            const data = await client.sendTransacEmail(sendSmtpEmail);
+            if (error) {
+                console.error('❌ Erro ao enviar email:', error);
+                return false;
+            }
+
             return true;
 
         } catch (error: any) {
