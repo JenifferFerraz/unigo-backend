@@ -136,7 +136,7 @@ class AuthService {
         user.refreshToken = resetToken;
         await this.userRepository.save(user);
 
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+        const resetLink = `${process.env.FRONTEND_URL}/#/reset-password?token=${resetToken}`;
 
         // Envia email de forma assíncrona sem bloquear a resposta
         EmailService.sendPasswordResetEmail(email, resetLink).catch(() => {});

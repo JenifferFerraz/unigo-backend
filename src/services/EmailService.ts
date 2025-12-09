@@ -19,15 +19,18 @@ class EmailService {
         return apiInstance;
     }
 
-    //** - Converte imagem para base64 para anexar no email */
-    private static getLogoBase64(): string {
+    //** - Obtém o logo como attachment para o email */
+    private static getLogoAttachment(): any[] {
         try {
             const logoPath = path.join(__dirname, '../assets/Logo.png');
             const logoBuffer = fs.readFileSync(logoPath);
-            return logoBuffer.toString('base64');
+            return [{
+                content: logoBuffer.toString('base64'),
+                name: 'logo.png'
+            }];
         } catch (error) {
-            console.warn('⚠️ Logo não encontrado, usando placeholder');
-            return '';
+            console.warn('⚠️ Logo não encontrado');
+            return [];
         }
     }
 
@@ -41,16 +44,13 @@ class EmailService {
         if (!client) {
             console.warn('⚠️ Cliente de email não configurado. Email não será enviado.');
             if (process.env.NODE_ENV === 'development') {
-                console.log('Link de reset (desenvolvimento):', resetLink);
             }
             return false;
         }
 
         try {
-            const logoBase64 = this.getLogoBase64();
-            const logoSrc = logoBase64 
-                ? `data:image/png;base64,${logoBase64}`
-                : 'https://via.placeholder.com/120x120?text=UniGo';
+            // Usa o logo hospedado no frontend (publicamente acessível)
+            const logoSrc = 'https://unigo-frontend.onrender.com/assets/images/Logo.png';
 
             const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
             sendSmtpEmail.to = [{ email: email }];
@@ -147,7 +147,7 @@ class EmailService {
             console.error('❌ Erro ao enviar email:', error.message);
             
             if (process.env.NODE_ENV === 'development') {
-                console.log('Link de reset (desenvolvimento):', resetLink);
+                console.log('Link de reset ():', resetLink);
             }
             
             return false;
