@@ -60,7 +60,8 @@ class UserService {
                 refreshToken,
                 isDeleted: false,
                 isEmailVerified: false,
-                termsAccepted: data.termsAccepted ?? false
+                termsAccepted: data.termsAccepted ?? false,
+                course: data.studentProfile?.courseId ? { id: data.studentProfile.courseId } as any : undefined
             });
             await userRepository.save(user);
 
