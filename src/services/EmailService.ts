@@ -73,8 +73,8 @@ class EmailService {
                 <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" cellspacing="0" cellpadding="0" border="0">
                     <!-- Header com logo e cor da marca -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #4C40C6 0%, #5D52D6 100%); padding: 40px 20px; text-align: center;">
-                            <img src="${logoSrc}" alt="UniGo Logo" style="width: 120px; height: auto; margin-bottom: 10px;" />
+                        <td style="background-color: #4C40C6; background: linear-gradient(135deg, #4C40C6 0%, #5D52D6 100%); padding: 40px 20px; text-align: center;">
+                            <img src="${logoSrc}" alt="UniGo Logo" style="width: 120px; height: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
                             <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Redefinição de Senha</h1>
                         </td>
                     </tr>
