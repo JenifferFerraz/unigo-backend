@@ -49,8 +49,7 @@ class EmailService {
         }
 
         try {
-            // Usa o logo hospedado no frontend (publicamente acessível)
-            const logoSrc = 'https://unigo-frontend.onrender.com/assets/images/Logo.png';
+            const logoSrc = 'https://unigo-frontend.onrender.com/assets/assets/images/Logo.png';
 
             const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
             sendSmtpEmail.to = [{ email: email }];
@@ -91,15 +90,17 @@ class EmailService {
                             </p>
                             
                             <!-- Botão de ação -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
-                                <tr>
-                                    <td style="border-radius: 8px; background: linear-gradient(135deg, #4C40C6 0%, #5D52D6 100%);">
-                                        <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                                            Redefinir Senha
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
+                            <center>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td style="border-radius: 8px; background-color: #4C40C6; padding: 16px 40px;">
+                                            <a href="${resetLink}" style="display: inline-block; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600;">
+                                                Redefinir Senha
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </center>
                             
                             <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 30px 0 20px 0;">
                                 Ou copie e cole este link no seu navegador:
