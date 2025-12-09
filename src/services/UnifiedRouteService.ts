@@ -75,21 +75,21 @@ export class UnifiedRouteService {
     let totalDistance = 0;
     const floorsTraversed: number[] = [];
 
-    const structure = await this.structureRepo.findOne({
+    // 🔍 VERIFICAR SE USUÁRIO JÁ ESTÁ DENTRO DA ESTRUTURA
+    const structureForCheck = await this.structureRepo.findOne({
       where: { id: structureId }
     });
 
     let isUserInsideStructure = false;
-    let userFloor = 0; 
+    let userFloor = 0; // Assume térreo (andar 0) por padrão quando dentro
 
-    if (structure?.geometry) {
-      isUserInsideStructure = this.isPointInStructure(userPosition, structure.geometry);
+    if (structureForCheck?.geometry) {
+      isUserInsideStructure = this.isPointInStructure(userPosition, structureForCheck.geometry);
       if (isUserInsideStructure) {
         console.log('✅ Usuário já está dentro da estrutura');
-        const distanceToDestination = haversine(userPosition, destinationCoords);
-        if (distanceToDestination < 100) { 
-          userFloor = destinationFloor;
-        }
+        // Assume andar térreo (0) pois não temos informação do eixo Z
+        userFloor = 0;
+        console.log(`📍 Usuário dentro da estrutura, assumindo andar ${userFloor}`);
       }
     }
 
@@ -97,13 +97,16 @@ export class UnifiedRouteService {
     let entryFloor: number;
     let isMainEntrance = false;
 
+    // Se usuário já está dentro, usa sua posição como ponto de entrada
     if (isUserInsideStructure) {
       entryPoint = userPosition;
       entryFloor = userFloor;
-      console.log(`📍 Calculando rota interna direta do andar ${userFloor}`);
+      console.log(`📍 Calculando rota interna direta do andar ${userFloor} para andar ${destinationFloor}`);
     } else {
+      // 🎯 Usuário está FORA - calcula rota até a porta
       let targetStairPosition: number[] | undefined = undefined;
       
+      // Se destino está em andar diferente, descobrir qual escada será usada
       if (destinationFloor !== 0) {
         const tempDoor = await this.findNearestStructureDoor(structureId, userPosition, undefined, true);
         if (tempDoor) {
@@ -219,6 +222,11 @@ export class UnifiedRouteService {
       estimatedTime += segment.distance / speed;
     }
     estimatedTime = estimatedTime / 60;
+
+    const structure = await this.structureRepo.findOne({
+      where: { id: structureId }
+
+    });
 
     const allFloorsSet = new Set<number>([entryFloor, destinationFloor, ...floorsTraversed]);
     for (const segment of segments) {
@@ -343,7 +351,7 @@ export class UnifiedRouteService {
   private async findNearestStructureDoor(
     structureId: number,
     userPosition: number[],
-    targetPosition?: number[], 
+    targetPosition?: number[], // 🎯 NOVO: posição da escada alvo
     mainEntranceOnly: boolean = false
   ): Promise<{ coordinates: number[]; floor: number; distance: number; isMainEntrance: boolean } | null> {
 
@@ -352,6 +360,7 @@ export class UnifiedRouteService {
       structure: { id: structureId }
     };
 
+    // Não filtrar por andar - queremos ver todas as portas
     const doorRoutes = await this.internalRouteRepo.find({
       where: whereClause
     });
@@ -373,7 +382,8 @@ export class UnifiedRouteService {
       if (!route.properties?.isDoor) continue;
       if (!route.geometry?.coordinates) continue;
 
-      
+      // 🔧 CORRIGIDO: Aceitar tanto "In/Out" quanto ausência da propriedade
+      // Se não tem "In/Out", considera como entrada válida (caso do Bloco H)
       const isMainEntrance = route.properties['In/Out'] === true || 
                             route.properties['In/Out'] === undefined;
 
@@ -643,12 +653,13 @@ export class UnifiedRouteService {
     const structure = await this.structureRepo.findOne({ where: { id: structureId } });
     let blocoDestino = "";
     if (structure && structure.description) {
- 
+      // Extrair código do bloco (ex: "B2" de "Estrutura do B2 ESTRUTURA")
+      // Procura por padrão: letra(s) seguida(s) de número(s)
       const match = String(structure.description).trim().match(/\b([A-Z]+\d+)\b/);
       if (match) {
         blocoDestino = match[1].toUpperCase();
       } else {
-
+        // Fallback: última palavra
         const fallbackMatch = String(structure.description).trim().match(/([A-Za-z0-9]+)$/);
         if (fallbackMatch) blocoDestino = fallbackMatch[1].toUpperCase();
       }
@@ -661,7 +672,7 @@ export class UnifiedRouteService {
 
     for (const route of allRoutes) {
       let points: number[][] = [];
-      const floor = (route as InternalRoute).floor || 0;
+      const floor = 'floor' in route ? route.floor : 0;
 
       if (route.geometry?.coordinates && route.geometry.coordinates.length > 0) {
         for (const line of route.geometry.coordinates) {
@@ -1053,6 +1064,7 @@ export class UnifiedRouteService {
 
     const graph = new Map<number, Array<{ floor: number; distance: number; type: 'stairs' | 'level_passage' }>>();
 
+    // Construir o grafo
     for (const conn of connections) {
       if (!graph.has(conn.floorA)) graph.set(conn.floorA, []);
       if (!graph.has(conn.floorB)) graph.set(conn.floorB, []);
@@ -1070,6 +1082,7 @@ export class UnifiedRouteService {
       });
     }
 
+    // Verificar se os andares estão no grafo
     if (!graph.has(startFloor) || !graph.has(endFloor)) {
       return null;
     }
@@ -1081,6 +1094,7 @@ export class UnifiedRouteService {
     const previous = new Map<number, number | null>();
     const unvisited = new Set<number>(graph.keys());
 
+    // Inicializar distâncias
     graph.forEach((_, floor) => {
       distances.set(floor, Infinity);
       previous.set(floor, null);
@@ -1089,6 +1103,7 @@ export class UnifiedRouteService {
     distances.set(startFloor, 0);
 
     while (unvisited.size > 0) {
+      // Encontrar o nó não visitado com menor distância
       let current: number | null = null;
       let minDist = Infinity;
 
@@ -1117,7 +1132,7 @@ export class UnifiedRouteService {
         // ============================================
         // NOVO: Aplicar peso menor para escadas (priorizar)
         // ============================================
-        const weightMultiplier = type === 'stairs' ? 1.0 : 3.0; 
+        const weightMultiplier = type === 'stairs' ? 1.0 : 3.0; // Passarelas têm peso 3x maior
         const weightedDistance = distance * weightMultiplier;
 
         const alt = distances.get(current)! + weightedDistance;
@@ -1129,6 +1144,7 @@ export class UnifiedRouteService {
       }
     }
 
+    // Reconstruir caminho
     const path: number[] = [];
     let current: number | null = endFloor;
     let iterations = 0;
@@ -1146,6 +1162,7 @@ export class UnifiedRouteService {
       iterations++;
     }
 
+    // Verificar se o caminho é válido
     if (path.length === 0 || path[0] !== startFloor || path[path.length - 1] !== endFloor) {
       return null;
     }
@@ -1515,38 +1532,32 @@ export class UnifiedRouteService {
     return null;
   }
 
-  private isPointInStructure(point: number[], geometry: any): boolean {
-    if (!geometry || !geometry.coordinates) return false;
-
-    let coords = geometry.coordinates;
+  /**
+   * Verifica se um ponto está dentro de uma estrutura usando sua geometria
+   */
+  private isPointInStructure(point: number[], structureGeometry: any): boolean {
+    if (!structureGeometry || !structureGeometry.coordinates || !structureGeometry.coordinates[0]) {
+      return false;
+    }
     
-    if (typeof coords === 'string') {
-      try {
-        coords = JSON.parse(coords);
-      } catch {
-        return false;
-      }
-    }
-
-    if (geometry.type === 'Polygon' && Array.isArray(coords) && coords.length > 0) {
-      const polygon = coords[0];
-      return this.pointInPolygon(point, polygon);
-    }
-
-    return false;
+    const polygon = structureGeometry.coordinates[0];
+    return this.pointInPolygon(point, polygon);
   }
 
+  /**
+   * Algoritmo ray casting para verificar se ponto está dentro de polígono
+   */
   private pointInPolygon(point: number[], polygon: number[][]): boolean {
     const [x, y] = point;
     let inside = false;
 
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const [xi, yi] = polygon[i];
-      const [xj, yj] = polygon[j];
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
 
-      const intersect = ((yi > y) !== (yj > y)) &&
-        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-
+      const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      
       if (intersect) inside = !inside;
     }
 
