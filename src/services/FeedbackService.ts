@@ -34,7 +34,7 @@ class FeedbackService {
   /**
    * Criar novo feedback
    */
-  async createFeedback(data: CreateFeedbackDto & { userId?: number | null; isAnonymous: boolean }): Promise<Feedback> {
+  async createFeedback(data: CreateFeedbackDto & { userId?: string | null; isAnonymous: boolean }): Promise<Feedback> {
     // Validar scores (1-5)
     const scores = [
       data.identificarLocalizacao,

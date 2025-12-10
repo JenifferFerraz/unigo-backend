@@ -16,8 +16,11 @@ export class StudentProfile {
     @Column({ nullable: true })
     courseId: number;
 
+    @Column({ type: 'uuid', unique: true })
+    userId: string;
+
     @OneToOne(() => User, user => user.studentProfile)
-    @JoinColumn()
+    @JoinColumn({ name: 'userId' })
     user: User;
 
     @OneToOne(() => Course)

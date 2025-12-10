@@ -158,7 +158,7 @@ class AuthService {
         await this.userRepository.save(user);
     }
     //** - Valida os dados para aceitação dos termos */
-    public static async acceptTerms(userId: number): Promise<void> {
+    public static async acceptTerms(userId: string): Promise<void> {
         const user = await this.userRepository.findOne({
             where: {
                 id: userId,

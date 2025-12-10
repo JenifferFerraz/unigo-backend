@@ -293,7 +293,7 @@ describe('Auth Integration Tests', () => {
 
       const response = await request(app)
         .post('/auth/accept-terms')
-        .send({ userId: 1 })
+        .send({ userId: '1531351351' })
         .expect(200);
 
       expect(response.body).toHaveProperty('message');

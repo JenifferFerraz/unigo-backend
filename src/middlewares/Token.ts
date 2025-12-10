@@ -5,7 +5,7 @@ import UserRepository from '../repository/UserRepository';
 declare global {
     namespace Express {
         interface Request {
-            userId?: number;
+            userId?: string;
         }
     }
 }

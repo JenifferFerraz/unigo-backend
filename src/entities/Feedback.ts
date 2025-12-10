@@ -11,8 +11,8 @@ export class Feedback {
   @JoinColumn({ name: 'user_id' })
   user: User | null;
 
-  @Column({ name: 'user_id', nullable: true })
-  userId: number | null;
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId: string | null;
 
   // Parte 1: Perfil do usuário
   @Column({ type: 'varchar', length: 50 })

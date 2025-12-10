@@ -5,7 +5,7 @@ import { CourseLocation } from '../entities/Location';
 import { StudentProfile } from '../entities/StudentProfile';
 
 interface ClassNotification {
-    userId: number;
+    userId: string;
     userName: string;
     className: string;
     courseName: string;
@@ -24,7 +24,7 @@ class NotificationService {
     /**
      * Get upcoming class notifications for a specific user
      */
-    public async getUserUpcomingClasses(userId: number): Promise<ClassNotification[]> {
+    public async getUserUpcomingClasses(userId: string): Promise<ClassNotification[]> {
         try {
             const user = await this.userRepository.findOne({
                 where: { id: userId },
@@ -49,7 +49,7 @@ class NotificationService {
             return courseLocations.map(cl => ({
                 userId: user.id,
                 userName: user.name,
-                className: user.course.className,
+                className: user.course.name,
                 courseName: user.course.name,
                 locationCode: cl.location.code,
                 locationName: cl.location.name,
@@ -66,7 +66,7 @@ class NotificationService {
     /**
      * Get classes by time range for a specific user
      */
-    public async getClassesByTimeRange(userId: number, startDate: Date, endDate: Date): Promise<ClassNotification[]> {
+    public async getClassesByTimeRange(userId: string, startDate: Date, endDate: Date): Promise<ClassNotification[]> {
         try {
             const user = await this.userRepository.findOne({
                 where: { id: userId },
@@ -102,7 +102,7 @@ class NotificationService {
             return filteredLocations.map(cl => ({
                 userId: user.id,
                 userName: user.name,
-                className: user.course.className,
+                className: user.course.name,
                 courseName: user.course.name,
                 locationCode: cl.location.code,
                 locationName: cl.location.name,
