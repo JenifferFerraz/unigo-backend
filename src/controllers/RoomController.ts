@@ -5,16 +5,42 @@ import { Room } from '../entities/Room';
 export class RoomController {
     static async getAll(req: Request, res: Response) {
         const repo = AppDataSource.getRepository(Room);
-        const q = (req.query.search || req.query.q || '').toString().toLowerCase();
+        const rawQuery = (req.query.search || req.query.q || '').toString();
+        
         let rooms;
-        if (q) {
-            rooms = await repo.createQueryBuilder('room')
-                .where('LOWER(room.name) LIKE :q', { q: `%${q}%` })
-                .andWhere('room.isSearchable = :isSearchable', { isSearchable: true })
-                .getMany();
+        if (rawQuery) {
+            const normalized = rawQuery
+                .toLowerCase()
+                .replace(/\b(sala|laboratório|laboratorio|lab)\b/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+
+            const searchTerms = normalized.split(' ').filter(t => t.length > 0);
+            
+            if (searchTerms.length > 0) {
+                let query = repo.createQueryBuilder('room')
+                    .where('room.isSearchable = :isSearchable', { isSearchable: true });
+
+                // Buscar cada termo separadamente (AND)
+                searchTerms.forEach((term, index) => {
+                    query = query.andWhere(
+                        `LOWER(REPLACE(REPLACE(room.name, 'SALA ', ''), 'LAB ', '')) LIKE :term${index}`,
+                        { [`term${index}`]: `%${term}%` }
+                    );
+                });
+
+                rooms = await query.getMany();
+
+                console.log(`✅ Encontradas ${rooms.length} salas`);
+                rooms.forEach(r => console.log(`   - ${r.name} (ID: ${r.id})`));
+            } else {
+                rooms = [];
+            }
         } else {
             rooms = await repo.find({ where: { isSearchable: true } });
         }
+        
         res.json(rooms);
     }
 
