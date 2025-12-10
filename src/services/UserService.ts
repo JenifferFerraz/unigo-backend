@@ -42,9 +42,11 @@ class UserService {
 
             if (data.studentProfile?.studentId) {
                 const existingDocument = await studentProfileRepository.createQueryBuilder('studentProfile')
-                    .where('LOWER(studentProfile.studentId) = LOWER(:studentId)', { studentId: data.studentProfile.studentId })
+                    .where('studentProfile.studentId = :studentId', { studentId: data.studentProfile.studentId })
                     .getOne();
-                if (existingDocument) throw new Error('Document ID (matrícula) already registered');
+                if (existingDocument) {
+                    throw new Error(`Matrícula ${data.studentProfile.studentId} já está cadastrada`);
+                }
             }
 
             if (data.password) {

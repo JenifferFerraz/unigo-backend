@@ -7,7 +7,7 @@ export class StudentProfile {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ unique: true })
     studentId: string;
 
     @Column({ nullable: true })
