@@ -37,6 +37,11 @@ class EventService {
     const repository = AppDataSource.getRepository(Event);
     const queryBuilder = repository.createQueryBuilder('event');
 
+    // Filtro padrão: apenas eventos do último mês em diante
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+
     if (filters.type) {
       queryBuilder.andWhere('event.type = :type', { type: filters.type });
     }
@@ -54,13 +59,18 @@ class EventService {
       queryBuilder.andWhere('event.startDate >= :startDate', { startDate: filters.startDate });
     } else if (filters.endDate) {
       queryBuilder.andWhere('event.startDate <= :endDate', { endDate: filters.endDate });
+    } else {
+      // Se não houver filtros de data específicos, mostra apenas do último mês em diante
+      queryBuilder.andWhere('event.startDate >= :oneMonthAgo', { oneMonthAgo });
     }
 
     if (filters.courseId) {
-      queryBuilder.andWhere('event.courseId = :courseId', { courseId: filters.courseId });
+      // Busca eventos do curso específico OU eventos gerais (courseId null)
+      queryBuilder.andWhere('(event.courseId = :courseId OR event.courseId IS NULL)', { courseId: filters.courseId });
     }
 
-    queryBuilder.orderBy('event.startDate', 'ASC');
+    // Ordena do mais recente para o mais antigo
+    queryBuilder.orderBy('event.startDate', 'DESC');
 
     return await queryBuilder.getMany();
   }

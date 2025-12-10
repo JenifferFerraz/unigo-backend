@@ -57,7 +57,8 @@ class AcademicCalendarService {
     if (filters.courseId !== undefined && filters.courseId !== null) {
       // Garante que courseId é número
       const courseIdNum = typeof filters.courseId === 'string' ? parseInt(filters.courseId, 10) : filters.courseId;
-      queryBuilder.andWhere('calendar.courseId = :courseId', { courseId: courseIdNum });
+      // Busca eventos do curso específico OU eventos gerais (courseId null)
+      queryBuilder.andWhere('(calendar.courseId = :courseId OR calendar.courseId IS NULL)', { courseId: courseIdNum });
     }
 
     queryBuilder.orderBy('calendar.date', 'ASC');

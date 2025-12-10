@@ -48,12 +48,44 @@ class ScheduleService {
       let structureId = null;
       if (s.room) {
         console.log(`[ScheduleService] Procurando room: '${s.room}'`);
-        const room = await roomRepo.createQueryBuilder('room')
+        
+        // Normaliza o nome da sala do schedule (remove prefixos comuns)
+        const normalized = s.room
+          .toLowerCase()
+          .replace(/\b(sala|laboratório|laboratorio|lab)\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Tenta busca exata primeiro
+        let room = await roomRepo.createQueryBuilder('room')
           .where('LOWER(room.name) = LOWER(:name)', { name: s.room })
           .getOne();
+
+        // Se não encontrou, tenta busca normalizada
+        if (!room && normalized) {
+          const searchTerms = normalized.split(' ').filter(t => t.length > 0);
+          
+          if (searchTerms.length > 0) {
+            let qb = roomRepo.createQueryBuilder('room');
+            
+            searchTerms.forEach((term, idx) => {
+              const paramName = `term${idx}`;
+              qb = qb.andWhere(
+                `(LOWER(REPLACE(REPLACE(REPLACE(REPLACE(room.name, 'SALA ', ''), 'LABORATÓRIO ', ''), 'LABORATORIO ', ''), 'LAB ', '')) LIKE :${paramName})`,
+                { [paramName]: `%${term}%` }
+              );
+            });
+            
+            room = await qb.getOne();
+          }
+        }
+        
         if (room) {
           roomId = room.id;
           structureId = room.structureId;
+          console.log(`[ScheduleService] ✓ Encontrado: ${room.name} (ID: ${roomId})`);
+        } else {
+          console.log(`[ScheduleService] ✗ Não encontrado: '${s.room}' (normalizado: '${normalized}')`);
         }
       }
       return {

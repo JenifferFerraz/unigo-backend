@@ -166,10 +166,14 @@ class UploadService {
 
         let courseEntity = undefined;
         if (row.nome_curso) {
-          const courseRepository = AppDataSource.getRepository('Course');
-          courseEntity = await courseRepository.findOne({ where: { name: row.nome_curso } });
-          if (!courseEntity) {
-            throw new Error(`Curso não encontrado: ${row.nome_curso}`);
+          // Se for "Geral", não associa a nenhum curso específico (será visível para todos)
+          const normalizedCourseName = row.nome_curso.trim().toLowerCase();
+          if (normalizedCourseName !== 'geral') {
+            const courseRepository = AppDataSource.getRepository('Course');
+            courseEntity = await courseRepository.findOne({ where: { name: row.nome_curso } });
+            if (!courseEntity) {
+              throw new Error(`Curso não encontrado: ${row.nome_curso}`);
+            }
           }
         }
 
@@ -250,34 +254,42 @@ class UploadService {
           throw new Error('Campos obrigatórios faltando: titulo, data, tipo');
         }
 
-        if (!(row.data instanceof Date) && isNaN(Date.parse(row.data as any))) {
-          throw new Error('Formato de data inválido');
+        // Processa data em formato brasileiro (ex: "14 a 28 de Julho" ou "26 de Julho")
+        let parsedDate: Date;
+        try {
+          parsedDate = this.parseBrazilianDate(row.data, row.ano);
+        } catch (dateError: any) {
+          throw new Error(`Formato de data inválido: ${dateError.message}`);
         }
 
         let courseId = undefined;
         let courseName = row.curso || row.nome_curso;
+        
+        // Se for "Geral", não associa a nenhum curso específico
         if (courseName) {
-          const normalize = (str: string) => str
-            .normalize('NFD')
-            .replace(/[ -]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toLowerCase();
-          const normalizedCourseName = normalize(courseName);
-          const courseRepository = AppDataSource.getRepository('Course');
-          const allCourses = await courseRepository.find();
-          const foundCourse = allCourses.find(c => normalize(c.name) === normalizedCourseName);
-          if (!foundCourse) {
-            throw new Error(`Curso não encontrado: ${courseName}`);
+          const normalizedCourseName = courseName.trim().toLowerCase();
+          if (normalizedCourseName !== 'geral') {
+            const normalize = (str: string) => str
+              .normalize('NFD')
+              .replace(/[ -]/g, '')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLowerCase();
+            const courseRepository = AppDataSource.getRepository('Course');
+            const allCourses = await courseRepository.find();
+            const foundCourse = allCourses.find(c => normalize(c.name) === normalize(courseName));
+            if (!foundCourse) {
+              throw new Error(`Curso não encontrado: ${courseName}`);
+            }
+            courseId = foundCourse.id;
+            courseName = foundCourse.name;
           }
-          courseId = foundCourse.id;
-          courseName = foundCourse.name;
         }
 
         const calendarRepository = AppDataSource.getRepository(AcademicCalendar);
         await calendarRepository.save({
           title: row.titulo,
-          date: new Date(row.data),
+          date: parsedDate,
           type: row.tipo,
           description: row.descricao,
           semester: row.semestre,
@@ -306,6 +318,56 @@ class UploadService {
     return result;
   }
   
+  /**
+   * Parse data em formato brasileiro para calendário acadêmico
+   * Exemplos: "26 de Julho", "14 a 28 de Julho", "01 de Agosto"
+   */
+  private parseBrazilianDate(dateValue: any, year?: number): Date {
+    if (dateValue == null || dateValue === '') {
+      throw new Error('Data não pode ser nula ou vazia');
+    }
+
+    // Se já for uma Date válida, retorna
+    if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+      return dateValue;
+    }
+
+    // Converte para string
+    const dateStr = String(dateValue).trim();
+    
+    // Mapeamento de meses em português
+    const monthMap: { [key: string]: number } = {
+      'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3,
+      'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
+      'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
+    };
+
+    // Extrai o primeiro dia e o mês
+    // Suporta: "26 de Julho", "14 a 28 de Julho", "01 de Agosto"
+    const match = dateStr.match(/(\d{1,2})\s*(?:a\s*\d{1,2}\s*)?de\s+(\w+)/i);
+    
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const monthName = match[2].toLowerCase();
+      const month = monthMap[monthName];
+      
+      if (month !== undefined && day >= 1 && day <= 31) {
+        const useYear = year || new Date().getFullYear();
+        return new Date(useYear, month, day);
+      }
+    }
+
+    // Fallback: tenta formato dd/MM/yyyy
+    const dateMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dateMatch) {
+      const day = parseInt(dateMatch[1], 10);
+      const month = parseInt(dateMatch[2], 10) - 1;
+      const useYear = parseInt(dateMatch[3], 10);
+      return new Date(useYear, month, day);
+    }
+
+    throw new Error(`Formato de data não reconhecido: "${dateStr}". Use formato "DD de Mês" ou "DD/MM/YYYY"`);
+  }
 
   private parseDate(dateValue: any): string {
     if (dateValue == null || dateValue === '') {
