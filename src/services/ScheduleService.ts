@@ -123,6 +123,22 @@ class ScheduleService {
   }
 
   /**
+   * Atualizar horário
+   */
+  async update(id: number, updateData: any): Promise<Schedule | null> {
+    const repository = AppDataSource.getRepository(Schedule);
+    const schedule = await repository.findOneBy({ id });
+    
+    if (!schedule) {
+      return null;
+    }
+
+    // Merge dos dados atualizados
+    repository.merge(schedule, updateData);
+    return await repository.save(schedule);
+  }
+
+  /**
    * Deletar horário
    */
   async delete(id: number): Promise<void> {

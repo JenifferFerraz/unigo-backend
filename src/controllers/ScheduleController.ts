@@ -41,6 +41,26 @@ class ScheduleController {
   }
 
   /**
+   * Atualizar horário
+   */
+  public static async update(req: Request, res: Response): Promise<Response> {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const updateData = req.body;
+      const updatedSchedule = await ScheduleService.update(id, updateData);
+      
+      if (!updatedSchedule) {
+        return res.status(404).json({ message: 'Horário não encontrado.' });
+      }
+      
+      return res.status(200).json({ success: true, data: updatedSchedule });
+    } catch (error: any) {
+      console.error('[ScheduleController] Erro ao atualizar horário:', error);
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
    * Deletar horário
    */
   public static async delete(req: Request, res: Response): Promise<Response> {

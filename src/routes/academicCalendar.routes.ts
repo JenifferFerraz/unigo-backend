@@ -18,7 +18,7 @@ academicCalendarRoutes.get(
 );
 
 
-// Rota PATCH para atualização de evento do calendário (admin)
+// Rota de atualização de evento do calendário (admin)
 academicCalendarRoutes.patch(
   '/:id',
   TokenNode.authorize.bind(TokenNode),

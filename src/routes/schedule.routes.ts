@@ -18,6 +18,13 @@ scheduleRoutes.get(
 );
 
 // Rotas administrativas (apenas admin)
+scheduleRoutes.patch(
+  '/:id',
+  TokenNode.authorize.bind(TokenNode),
+  TokenNode.isAdmin.bind(TokenNode),
+  ScheduleController.update.bind(ScheduleController)
+);
+
 scheduleRoutes.delete(
   '/:id',
   TokenNode.authorize.bind(TokenNode),
